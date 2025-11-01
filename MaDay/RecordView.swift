@@ -299,7 +299,7 @@ private struct TimerSectionView: View {
     let totalTime: TimeInterval
 
     var body: some View {
-        VStack(alignment: .leading, spacing: AppSpacing.small) {
+        VStack(spacing: AppSpacing.small) {
             Text(formattedTime(currentTime))
                 .font(AppFont.largeTitle())
                 .foregroundColor(AppColor.textPrimary)
@@ -308,6 +308,8 @@ private struct TimerSectionView: View {
                 .font(AppFont.body())
                 .foregroundColor(AppColor.textSecondary)
         }
+        .frame(maxWidth: .infinity)
+        .multilineTextAlignment(.center)
     }
 
     private func formattedTime(_ time: TimeInterval) -> String {
