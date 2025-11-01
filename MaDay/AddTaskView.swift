@@ -19,18 +19,18 @@ struct AddTaskView: View {
 
     var body: some View {
         ZStack {
-            Color.white.ignoresSafeArea()
+            AppColor.background.ignoresSafeArea()
 
             ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: AppSpacing.large) {
                     appBar
                     categoryFilter
                     existingTasksSection
                     newTaskSection
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 16)
-                .padding(.bottom, 32)
+                .padding(.horizontal, AppSpacing.medium)
+                .padding(.top, AppSpacing.medium)
+                .padding(.bottom, AppSpacing.xLarge)
             }
         }
         .safeAreaInset(edge: .bottom) {
@@ -45,21 +45,21 @@ struct AddTaskView: View {
                 dismiss()
             } label: {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(Theme.textPrimary)
-                    .frame(width: 36, height: 36)
+                    .font(AppFont.heading())
+                    .foregroundColor(AppColor.textPrimary)
+                    .frame(width: AppMetrics.toolbarIconSize, height: AppMetrics.toolbarIconSize)
             }
 
             Spacer()
 
             Text("Add Task")
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundColor(Theme.textPrimary)
+                .font(AppFont.title())
+                .foregroundColor(AppColor.textPrimary)
 
             Spacer()
 
-            Color.clear
-                .frame(width: 36, height: 36)
+            Spacer()
+                .frame(width: AppMetrics.toolbarIconSize)
         }
     }
 
@@ -70,29 +70,29 @@ struct AddTaskView: View {
                     filterExpanded.toggle()
                 }
             } label: {
-                HStack(spacing: 12) {
+                HStack(spacing: AppSpacing.small) {
                     Image(systemName: "slider.horizontal.3")
-                        .foregroundColor(Theme.primary)
+                        .foregroundColor(AppColor.primary)
                     Text(selectedFilter.title)
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundColor(Theme.textPrimary)
+                        .font(AppFont.body())
+                        .foregroundColor(AppColor.textPrimary)
                     Spacer()
                     Image(systemName: "chevron.down")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(Theme.textSecondary)
+                        .font(AppFont.caption())
+                        .foregroundColor(AppColor.textSecondary)
                         .rotationEffect(filterExpanded ? .degrees(180) : .zero)
                         .animation(.spring(response: 0.35, dampingFraction: 0.7), value: filterExpanded)
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 14)
+                .padding(.horizontal, AppSpacing.medium)
+                .padding(.vertical, AppSpacing.smallPlus)
             }
             .buttonStyle(.plain)
 
             if filterExpanded {
                 Divider()
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppSpacing.medium)
 
-                VStack(spacing: 12) {
+                VStack(spacing: AppSpacing.small) {
                     ForEach(TaskCategoryFilter.allCases) { filter in
                         Button {
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
@@ -102,132 +102,92 @@ struct AddTaskView: View {
                         } label: {
                             HStack {
                                 Text(filter.title)
-                                    .font(.system(size: 15))
-                                    .foregroundColor(Theme.textPrimary)
+                                    .font(AppFont.bodyRegular())
+                                    .foregroundColor(AppColor.textPrimary)
                                 Spacer()
                                 if selectedFilter == filter {
                                     Image(systemName: "checkmark")
-                                        .foregroundColor(Theme.primary)
-                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundColor(AppColor.primary)
+                                        .font(AppFont.caption())
                                 }
                             }
-                            .padding(.horizontal, 4)
+                            .padding(.horizontal, AppSpacing.small)
                         }
                         .buttonStyle(.plain)
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 14)
+                .padding(.horizontal, AppSpacing.medium)
+                .padding(.vertical, AppSpacing.smallPlus)
             }
         }
         .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(Theme.inputBorder, lineWidth: 1)
+            RoundedRectangle(cornerRadius: AppRadius.standard, style: .continuous)
+                .stroke(AppColor.border, lineWidth: 1)
                 .background(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(Color.white)
+                    RoundedRectangle(cornerRadius: AppRadius.standard, style: .continuous)
+                        .fill(AppColor.surface)
                 )
         )
     }
 
     private var existingTasksSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: AppSpacing.medium) {
             Text("Existing Tasks")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(Theme.textPrimary)
+                .sectionTitleStyle()
 
             if displayCategories.isEmpty {
                 Text("No tasks in this category yet")
-                    .font(.system(size: 14))
-                    .foregroundColor(Theme.textSecondary)
+                    .font(AppFont.bodyRegular())
+                    .foregroundColor(AppColor.textSecondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.vertical, 6)
+                    .padding(.vertical, AppSpacing.small)
             } else {
                 ForEach(displayCategories, id: \.self) { category in
                     Section {
-                        VStack(spacing: 12) {
+                        VStack(spacing: AppSpacing.smallPlus) {
                             ForEach(filteredTasks(for: category)) { task in
                                 ExistingTaskCard(task: task, indicatorColor: category.color)
                             }
                         }
                     } header: {
-                        HStack(spacing: 8) {
-                            Circle()
-                                .fill(category.color)
-                                .frame(width: 8, height: 8)
-                            Text(category.title)
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(Theme.textSecondary)
-                        }
-                        .padding(.bottom, 4)
+                        AppSectionHeader(title: category.title, indicatorColor: category.color)
+                            .padding(.bottom, AppSpacing.xSmall)
                     }
                 }
             }
 
             Text("Or create a new task")
-                .font(.system(size: 13))
-                .foregroundColor(Theme.textSecondary)
-                .padding(.top, 8)
+                .font(AppFont.caption())
+                .foregroundColor(AppColor.textSecondary)
         }
     }
 
     private var newTaskSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: AppSpacing.medium) {
             Text("New Task Details")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(Theme.textPrimary)
+                .sectionTitleStyle()
 
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: AppSpacing.small) {
                 Text("Task Name")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(Theme.textSecondary)
+                    .font(AppFont.callout())
+                    .foregroundColor(AppColor.textSecondary)
 
-                TextField("Enter task name", text: $newTaskName)
-                    .textFieldStyle(.plain)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 14)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .stroke(Theme.inputBorder, lineWidth: 1)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .fill(Color.white)
-                            )
-                    )
+                AppTextField("Enter task name", text: $newTaskName)
             }
 
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: AppSpacing.small) {
                 Text("Description")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(Theme.textSecondary)
+                    .font(AppFont.callout())
+                    .foregroundColor(AppColor.textSecondary)
 
-                ZStack(alignment: .topLeading) {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(Theme.inputBorder, lineWidth: 1)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .fill(Color.white)
-                        )
-
-                    TextEditor(text: $newTaskDescription)
-                        .frame(minHeight: 120)
-                        .padding(12)
-                        .scrollContentBackground(.hidden)
-
-                    if newTaskDescription.isEmpty {
-                        Text("Add a short description...")
-                            .foregroundColor(Theme.textSecondary.opacity(0.5))
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 18)
-                            .allowsHitTesting(false)
-                    }
-                }
+                AppTextEditor("Add a short description...", text: $newTaskDescription)
+                    .frame(minHeight: 120)
             }
 
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: AppSpacing.small) {
                 Text("Category")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(Theme.textSecondary)
+                    .font(AppFont.callout())
+                    .foregroundColor(AppColor.textSecondary)
 
                 VStack(spacing: 0) {
                     Button {
@@ -235,30 +195,30 @@ struct AddTaskView: View {
                             categoryPickerExpanded.toggle()
                         }
                     } label: {
-                        HStack(spacing: 12) {
+                        HStack(spacing: AppSpacing.small) {
                             Circle()
                                 .fill(selectedCategory.color)
-                                .frame(width: 8, height: 8)
+                                .frame(width: AppSpacing.small, height: AppSpacing.small)
                             Text(selectedCategory.title)
-                                .font(.system(size: 15, weight: .medium))
-                                .foregroundColor(Theme.textPrimary)
+                                .font(AppFont.body())
+                                .foregroundColor(AppColor.textPrimary)
                             Spacer()
                             Image(systemName: "chevron.down")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(Theme.textSecondary)
+                                .font(AppFont.caption())
+                                .foregroundColor(AppColor.textSecondary)
                                 .rotationEffect(categoryPickerExpanded ? .degrees(180) : .zero)
                                 .animation(.spring(response: 0.35, dampingFraction: 0.7), value: categoryPickerExpanded)
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 14)
+                        .padding(.horizontal, AppSpacing.medium)
+                        .padding(.vertical, AppSpacing.smallPlus)
                     }
                     .buttonStyle(.plain)
 
                     if categoryPickerExpanded {
                         Divider()
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, AppSpacing.medium)
 
-                        VStack(spacing: 12) {
+                        VStack(spacing: AppSpacing.smallPlus) {
                             ForEach(TaskCategory.allCases) { category in
                                 Button {
                                     withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
@@ -269,32 +229,32 @@ struct AddTaskView: View {
                                     HStack {
                                         Circle()
                                             .fill(category.color)
-                                            .frame(width: 8, height: 8)
+                                            .frame(width: AppSpacing.small, height: AppSpacing.small)
                                         Text(category.title)
-                                            .font(.system(size: 15))
-                                            .foregroundColor(Theme.textPrimary)
+                                            .font(AppFont.bodyRegular())
+                                            .foregroundColor(AppColor.textPrimary)
                                         Spacer()
                                         if selectedCategory == category {
                                             Image(systemName: "checkmark")
-                                                .foregroundColor(Theme.primary)
-                                                .font(.system(size: 14, weight: .semibold))
+                                                .foregroundColor(AppColor.primary)
+                                                .font(AppFont.caption())
                                         }
                                     }
-                                    .padding(.horizontal, 4)
+                                    .padding(.horizontal, AppSpacing.small)
                                 }
                                 .buttonStyle(.plain)
                             }
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 14)
+                        .padding(.horizontal, AppSpacing.medium)
+                        .padding(.vertical, AppSpacing.smallPlus)
                     }
                 }
                 .background(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(Theme.inputBorder, lineWidth: 1)
+                    RoundedRectangle(cornerRadius: AppRadius.standard, style: .continuous)
+                        .stroke(AppColor.border, lineWidth: 1)
                         .background(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .fill(Color.white)
+                            RoundedRectangle(cornerRadius: AppRadius.standard, style: .continuous)
+                                .fill(AppColor.surface)
                         )
                 )
             }
@@ -302,28 +262,20 @@ struct AddTaskView: View {
     }
 
     private var saveButtonBar: some View {
-        VStack(spacing: 12) {
-            Button(action: saveTask) {
+        VStack(spacing: AppSpacing.small) {
+            AppButton(style: .primary, action: saveTask) {
                 Text("Save")
-                    .font(.system(size: 16, weight: .medium))
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 52)
-                    .foregroundColor(.white)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(Theme.primary)
-                    )
             }
             .disabled(trimmedTaskName.isEmpty)
             .opacity(trimmedTaskName.isEmpty ? 0.6 : 1)
 
-            Color.clear
-                .frame(height: 4)
+            AppColor.clear
+                .frame(height: AppSpacing.xSmall)
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 12)
-        .padding(.bottom, 8)
-        .background(Color.white.shadow(color: Theme.shadow.opacity(0.5), radius: 4, x: 0, y: -2))
+        .padding(.horizontal, AppSpacing.medium)
+        .padding(.top, AppSpacing.smallPlus)
+        .padding(.bottom, AppSpacing.small)
+        .background(AppColor.surface.shadow(color: AppShadow.card.opacity(0.5), radius: 4, x: 0, y: -2))
     }
 
     private var displayCategories: [TaskCategory] {
@@ -350,7 +302,6 @@ struct AddTaskView: View {
         let details = newTaskDescription.trimmingCharacters(in: .whitespacesAndNewlines)
         let newTask = TaskItem(title: title, tag: selectedCategory.tag, trackedTime: 0, detail: details)
         tasks.append(newTask)
-        print("Saved new task: \(newTask.title) (\(selectedCategory.title))")
         onTaskCreated?(newTask)
 
         newTaskName = ""
@@ -374,8 +325,8 @@ private enum TaskCategory: String, CaseIterable, Identifiable {
 
     var color: Color {
         switch self {
-        case .work: return Theme.primary
-        case .personal: return Theme.secondary
+        case .work: return AppColor.primary
+        case .personal: return AppColor.secondary
         }
     }
 
@@ -416,37 +367,37 @@ private struct ExistingTaskCard: View {
     let indicatorColor: Color
 
     var body: some View {
-        HStack(alignment: .top, spacing: 16) {
+        HStack(alignment: .top, spacing: AppSpacing.medium) {
             Circle()
                 .strokeBorder(indicatorColor, lineWidth: 2)
-                .frame(width: 24, height: 24)
+                .frame(width: AppSpacing.medium, height: AppSpacing.medium)
                 .overlay(
                     Circle()
                         .fill(indicatorColor.opacity(0.12))
-                        .frame(width: 18, height: 18)
+                        .frame(width: AppSpacing.medium - AppSpacing.small, height: AppSpacing.medium - AppSpacing.small)
                 )
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: AppSpacing.xSmall) {
                 Text(task.title)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(Theme.textPrimary)
+                    .font(AppFont.heading())
+                    .foregroundColor(AppColor.textPrimary)
 
                 if !task.detail.isEmpty {
                     Text(task.detail)
-                        .font(.system(size: 13))
-                        .foregroundColor(Theme.textSecondary)
+                        .font(AppFont.caption())
+                        .foregroundColor(AppColor.textSecondary)
                         .lineLimit(2)
                 }
             }
 
             Spacer()
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
+        .padding(.horizontal, AppSpacing.medium)
+        .padding(.vertical, AppSpacing.smallPlus)
         .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.white)
-                .shadow(color: Theme.shadow, radius: 2, x: 0, y: 0)
+            RoundedRectangle(cornerRadius: AppRadius.standard, style: .continuous)
+                .fill(AppColor.surface)
+                .shadow(color: AppShadow.card, radius: AppShadow.radius, x: AppShadow.x, y: AppShadow.y)
         )
     }
 }
@@ -456,4 +407,5 @@ private struct ExistingTaskCard: View {
         TaskItem(title: "Work on Project Dayflow", tag: .work, detail: "Finalize sprint backlog"),
         TaskItem(title: "Call with Mom", tag: .personal, detail: "Weekly check-in")
     ]))
+    .background(AppColor.background)
 }

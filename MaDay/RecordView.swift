@@ -32,22 +32,22 @@ struct RecordView: View {
         NavigationStack {
             VStack(spacing: 0) {
                 ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 24) {
+                    VStack(alignment: .leading, spacing: AppSpacing.large) {
                         appBar
                         tasksSection
                         timerSection
                         timerControls
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 24)
-                    .padding(.bottom, 32)
+                    .padding(.horizontal, AppSpacing.medium)
+                    .padding(.top, AppSpacing.large)
+                    .padding(.bottom, AppSpacing.xLarge)
                 }
 
                 CustomTabBar(selectedTab: $selectedTab)
-                    .padding(.top, 8)
-                    .background(Color.white)
+                    .padding(.top, AppSpacing.small)
+                    .background(AppColor.surface)
             }
-            .background(Color.white.edgesIgnoringSafeArea(.bottom))
+            .background(AppColor.background.ignoresSafeArea(edges: .bottom))
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(isPresented: $showAddTask) {
                 addTaskDestination
@@ -61,19 +61,18 @@ struct RecordView: View {
     private var appBar: some View {
         HStack {
             Text("Today")
-                .font(.system(size: 28, weight: .bold))
-                .foregroundColor(Theme.textPrimary)
+                .font(AppFont.largeTitle())
+                .foregroundColor(AppColor.textPrimary)
             Spacer()
         }
     }
 
     private var tasksSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: AppSpacing.medium) {
             Text("My Tasks")
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundColor(Theme.textPrimary)
+                .sectionTitleStyle()
 
-            VStack(spacing: 12) {
+            VStack(spacing: AppSpacing.smallPlus) {
                 ForEach(tasks) { task in
                     Button {
                         handleTaskSelection(task.id)
@@ -89,20 +88,14 @@ struct RecordView: View {
                 }
             }
 
-            Button {
+            AppButton(style: .primary) {
                 showAddTask = true
             } label: {
-                HStack {
+                HStack(spacing: AppSpacing.small) {
                     Image(systemName: "plus")
+                        .font(AppFont.button())
                     Text("Add Task")
-                        .fontWeight(.semibold)
                 }
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 48)
-                .background(Theme.primary)
-                .cornerRadius(10)
             }
         }
     }
@@ -123,6 +116,7 @@ struct RecordView: View {
             currentTime: sessionElapsed,
             totalTime: totalTrackedTime
         )
+        .sectionCardStyle()
     }
 
     private var timerControls: some View {
@@ -229,20 +223,20 @@ private struct TaskCardView: View {
     let trackedTime: TimeInterval
 
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: AppSpacing.medium) {
             Image(systemName: "checkmark.square")
-                .foregroundColor(Theme.textSecondary)
+                .foregroundColor(AppColor.textSecondary)
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: AppSpacing.xSmall) {
                 Text(task.title)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(Theme.textPrimary)
+                    .font(AppFont.heading())
+                    .foregroundColor(AppColor.textPrimary)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
 
                 Text("Tracked: \(formattedTrackedTime(trackedTime))")
-                    .font(.system(size: 12))
-                    .foregroundColor(Theme.textSecondary)
+                    .font(AppFont.caption())
+                    .foregroundColor(AppColor.textSecondary)
             }
 
             Spacer()
@@ -250,31 +244,31 @@ private struct TaskCardView: View {
             TagBadge(tag: task.tag)
 
             Image(systemName: isActive ? "timer.circle.fill" : "timer")
-                .foregroundColor(isActive ? Theme.primary : Theme.textSecondary.opacity(0.7))
+                .foregroundColor(isActive ? AppColor.primary : AppColor.textSecondary.opacity(0.7))
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.horizontal, AppSpacing.medium)
+        .padding(.vertical, AppSpacing.smallPlus)
         .background(backgroundColor)
         .overlay(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: AppRadius.standard)
                 .stroke(borderColor, lineWidth: borderWidth)
         )
-        .cornerRadius(16)
-        .shadow(color: Theme.shadow, radius: 2, x: 0, y: 0)
+        .cornerRadius(AppRadius.standard)
+        .shadow(color: AppShadow.card, radius: AppShadow.radius, x: AppShadow.x, y: AppShadow.y)
     }
 
     private var backgroundColor: Color {
-        isActive ? Theme.primary.opacity(0.12) : Color.white
+        isActive ? AppColor.primary.opacity(0.12) : AppColor.surface
     }
 
     private var borderColor: Color {
         if isActive {
-            return Theme.primary
+            return AppColor.primary
         }
         if isSelected {
-            return Theme.primaryStrong.opacity(0.9)
+            return AppColor.primaryStrong.opacity(0.9)
         }
-        return Color.clear
+        return AppColor.clear
     }
 
     private var borderWidth: CGFloat {
@@ -305,20 +299,15 @@ private struct TimerSectionView: View {
     let totalTime: TimeInterval
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: AppSpacing.small) {
             Text(formattedTime(currentTime))
-                .font(.system(size: 36, weight: .bold))
-                .foregroundColor(Theme.textPrimary)
+                .font(AppFont.largeTitle())
+                .foregroundColor(AppColor.textPrimary)
 
             Text("Total Time Today: \(formattedTotal(totalTime))")
-                .font(.system(size: 14))
-                .foregroundColor(Theme.textSecondary)
+                .font(AppFont.body())
+                .foregroundColor(AppColor.textSecondary)
         }
-        .padding(.vertical, 24)
-        .frame(maxWidth: .infinity)
-        .background(Color.white)
-        .cornerRadius(16)
-        .shadow(color: Theme.shadow, radius: 2, x: 0, y: 0)
     }
 
     private func formattedTime(_ time: TimeInterval) -> String {
@@ -346,59 +335,25 @@ private struct TimerControlView: View {
     let canStop: Bool
 
     var body: some View {
-        HStack(spacing: 12) {
-            Button(action: onStart) {
-                buttonLabel(
-                    "Start",
-                    background: Theme.primaryStrong,
-                    foreground: .white
-                )
+        HStack(spacing: AppSpacing.small) {
+            AppButton(style: .primary, action: onStart) {
+                Text("Start")
             }
             .disabled(!canStart)
             .opacity(canStart ? 1 : 0.5)
 
-            Button(action: onPause) {
-                buttonLabel(
-                    "Pause",
-                    background: Theme.secondaryStrong,
-                    foreground: .white
-                )
+            AppButton(style: .secondary, action: onPause) {
+                Text("Pause")
             }
             .disabled(!canPause)
             .opacity(canPause ? 1 : 0.5)
 
-            Button(action: onStop) {
-                buttonLabel(
-                    "Stop",
-                    background: Theme.neutralButton,
-                    foreground: Theme.textSecondary,
-                    borderColor: Theme.textSecondary.opacity(0.35)
-                )
+            AppButton(style: .neutral, action: onStop) {
+                Text("Stop")
             }
             .disabled(!canStop)
             .opacity(canStop ? 1 : 0.5)
         }
-    }
-
-    @ViewBuilder
-    private func buttonLabel(
-        _ title: String,
-        background: Color,
-        foreground: Color,
-        borderColor: Color? = nil
-    ) -> some View {
-        Text(title)
-            .font(.system(size: 14, weight: .medium))
-            .frame(width: 108, height: 48)
-            .foregroundColor(foreground)
-            .background(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(background)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(borderColor ?? .clear, lineWidth: borderColor == nil ? 0 : 1.2)
-            )
     }
 }
 
@@ -419,19 +374,20 @@ private struct CustomTabBar: View {
                 Button {
                     selectedTab = item.tab
                 } label: {
-                    VStack(spacing: 4) {
+                    VStack(spacing: AppSpacing.xSmall) {
                         Image(systemName: item.icon)
-                            .font(.system(size: 18, weight: .semibold))
+                            .font(AppFont.heading())
                         Text(item.label)
-                            .font(.system(size: 12))
+                            .font(AppFont.caption())
                     }
-                    .foregroundColor(selectedTab == item.tab ? Theme.primary : Theme.textSecondary.opacity(0.6))
+                    .foregroundColor(selectedTab == item.tab ? AppColor.primary : AppColor.textSecondary.opacity(0.6))
                     .frame(maxWidth: .infinity)
                 }
+                .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.horizontal, AppSpacing.medium)
+        .padding(.vertical, AppSpacing.smallPlus)
     }
 }
 
@@ -446,15 +402,15 @@ struct TaskItem: Identifiable {
         var color: Color {
             switch self {
             case .work:
-                return Theme.primary
+                return AppColor.primary
             case .fitness:
-                return Color(red: 90 / 255, green: 200 / 255, blue: 150 / 255)
+                return AppColor.fitness
             case .youtube:
-                return Theme.secondary
+                return AppColor.secondary
             case .learn:
-                return Color(red: 132 / 255, green: 94 / 255, blue: 247 / 255)
+                return AppColor.learning
             case .personal:
-                return Theme.secondary
+                return AppColor.secondary
             }
         }
     }
@@ -471,12 +427,12 @@ private struct TagBadge: View {
 
     var body: some View {
         Text(tag.rawValue)
-            .font(.system(size: 12, weight: .semibold))
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
+            .font(AppFont.badge())
+            .padding(.horizontal, AppSpacing.medium)
+            .padding(.vertical, AppSpacing.small)
             .background(tag.color.opacity(0.12))
             .foregroundColor(tag.color)
-            .cornerRadius(10)
+            .cornerRadius(AppRadius.standard)
     }
 }
 
@@ -491,19 +447,7 @@ private struct TabItem: Identifiable {
     let icon: String
 }
 
-enum Theme {
-    static let primary = Color(red: 91 / 255, green: 141 / 255, blue: 239 / 255)
-    static let secondary = Color(red: 233 / 255, green: 78 / 255, blue: 61 / 255)
-    static let primaryStrong = Color(red: 70 / 255, green: 117 / 255, blue: 224 / 255)
-    static let secondaryStrong = Color(red: 204 / 255, green: 65 / 255, blue: 51 / 255)
-    static let neutralButton = Color(red: 235 / 255, green: 237 / 255, blue: 244 / 255)
-    static let textPrimary = Color(red: 23 / 255, green: 26 / 255, blue: 31 / 255)
-    static let textSecondary = Color(red: 86 / 255, green: 93 / 255, blue: 109 / 255)
-    static let shadow = Color.black.opacity(0.1)
-    static let inputBorder = Color(red: 222 / 255, green: 225 / 255, blue: 230 / 255)
-}
-
 #Preview {
     RecordView()
-        .background(Color.white)
+        .background(AppColor.background)
 }

@@ -1,0 +1,112 @@
+import SwiftUI
+
+struct AppButton<Label: View>: View {
+    enum Style {
+        case primary
+        case secondary
+        case neutral
+    }
+
+    let style: Style
+    let action: () -> Void
+    private let label: () -> Label
+
+    init(style: Style = .primary, action: @escaping () -> Void, @ViewBuilder label: @escaping () -> Label) {
+        self.style = style
+        self.action = action
+        self.label = label
+    }
+
+    @ViewBuilder
+    var body: some View {
+        switch style {
+        case .primary:
+            button.primaryButtonStyle()
+        case .secondary:
+            button.secondaryButtonStyle()
+        case .neutral:
+            button.neutralButtonStyle()
+        }
+    }
+
+    private var button: some View {
+        Button(action: action) {
+            label()
+                .font(AppFont.button())
+                .frame(maxWidth: .infinity)
+                .frame(height: AppMetrics.buttonHeight)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+struct AppTextField: View {
+    let placeholder: String
+    @Binding var text: String
+
+    init(_ placeholder: String, text: Binding<String>) {
+        self.placeholder = placeholder
+        self._text = text
+    }
+
+    var body: some View {
+        TextField(placeholder, text: $text)
+            .font(AppFont.body())
+            .foregroundColor(AppColor.textPrimary)
+            .inputFieldStyle()
+    }
+}
+
+struct AppTextEditor: View {
+    let placeholder: String
+    @Binding var text: String
+
+    init(_ placeholder: String, text: Binding<String>) {
+        self.placeholder = placeholder
+        self._text = text
+    }
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            if text.isEmpty {
+                Text(placeholder)
+                    .font(AppFont.bodyRegular())
+                    .foregroundColor(AppColor.textSecondary.opacity(0.5))
+                    .padding(.horizontal, AppSpacing.smallPlus)
+                    .padding(.vertical, AppSpacing.smallPlus)
+            }
+
+            TextEditor(text: $text)
+                .font(AppFont.bodyRegular())
+                .foregroundColor(AppColor.textPrimary)
+                .padding(.horizontal, AppSpacing.smallPlus - AppSpacing.xSmall)
+                .padding(.vertical, AppSpacing.smallPlus - AppSpacing.xSmall)
+                .scrollContentBackground(.hidden)
+                .background(AppColor.clear)
+        }
+        .multilineInputFieldStyle()
+    }
+}
+
+struct AppSectionHeader: View {
+    let title: String
+    let indicatorColor: Color?
+
+    init(title: String, indicatorColor: Color? = nil) {
+        self.title = title
+        self.indicatorColor = indicatorColor
+    }
+
+    var body: some View {
+        HStack(spacing: AppSpacing.small) {
+            if let indicatorColor {
+                Circle()
+                    .fill(indicatorColor)
+                    .frame(width: AppSpacing.small, height: AppSpacing.small)
+            }
+            Text(title)
+                .font(AppFont.callout())
+                .foregroundColor(AppColor.textSecondary)
+        }
+    }
+}
