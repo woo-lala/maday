@@ -130,3 +130,31 @@ struct AppBadge: View {
             .foregroundColor(color)
     }
 }
+
+struct AppBackButton: View {
+    @Environment(\.dismiss) private var dismiss
+    var title: String? = nil
+    var action: (() -> Void)? = nil
+
+    var body: some View {
+        Button {
+            if let action {
+                action()
+            } else {
+                dismiss()
+            }
+        } label: {
+            HStack(spacing: AppSpacing.xSmall) {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 16, weight: .semibold))
+                if let title {
+                    Text(title)
+                        .font(AppFont.body())
+                }
+            }
+            .foregroundColor(AppColor.textPrimary)
+            .frame(height: AppMetrics.toolbarIconSize)
+        }
+        .buttonStyle(.plain)
+    }
+}

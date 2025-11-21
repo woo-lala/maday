@@ -24,30 +24,13 @@ struct AddTaskView: View {
                     .padding(.top, AppSpacing.large)
                     .padding(.bottom, AppSpacing.xLarge)
                 }
-            }
-            .safeAreaInset(edge: .bottom) {
-                saveButtonBar
-            }
-            .navigationTitle("Add Task")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Image(systemName: "chevron.left")
-                            .font(AppFont.heading())
-                            .foregroundColor(AppColor.textPrimary)
-                            .frame(width: AppMetrics.toolbarIconSize, height: AppMetrics.toolbarIconSize)
-                    }
-                }
-
-                ToolbarItem(placement: .topBarTrailing) {
-                    Color.clear
-                        .frame(width: AppMetrics.toolbarIconSize, height: AppMetrics.toolbarIconSize)
-                }
-            }
         }
+        .safeAreaInset(edge: .bottom) {
+            saveButtonBar
+        }
+        .navigationTitle("Add Task")
+        .navigationBarTitleDisplayMode(.inline)
+    }
     }
 
     private var categoryFilter: some View {

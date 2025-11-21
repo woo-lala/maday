@@ -117,7 +117,8 @@ struct RecordView: View {
             isTimerRunning = false
             lastTickDate = nil
         }
-        .toolbar(.hidden, for: .navigationBar)
+        .toolbar(.visible, for: .navigationBar)
+        .navigationBarBackButtonHidden(false)
     }
 
     private var timerSection: some View {
