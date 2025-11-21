@@ -19,8 +19,8 @@ extension Color {
     }
 
     // Core palette
-    static let mdPrimary = Color(hex: "4A90E2")
-    static let mdPrimaryStrong = Color(hex: "3E7BC4")
+    static let mdPrimary = Color(hex: "3D7AF5")
+    static let mdPrimaryStrong = Color(hex: "2F63C8")
     static let mdDestructive = Color(hex: "FF3B30")
 
     // Backgrounds
@@ -32,10 +32,10 @@ extension Color {
     static let mdTextSecondary = Color(hex: "8E8E93")
 
     // Category tags
-    static let mdWork = Color(hex: "5856D6")
-    static let mdFitness = Color(hex: "34C759")
-    static let mdLearning = Color(hex: "FFCC00")
-    static let mdYoutube = Color(hex: "FF2D55")
-    static let mdShopping = Color(hex: "8E8E93")
-    static let mdCooking = Color(hex: "A2845E")
+    static let mdWork = Color(hex: "3D7AF5")      // blue
+    static let mdFitness = Color(hex: "26BA67")   // green
+    static let mdLearning = Color(hex: "FFC23F")  // yellow
+    static let mdYoutube = Color(hex: "E94E3D")   // red
+    static let mdShopping = Color(hex: "2EB97F")  // green variant
+    static let mdCooking = Color(hex: "6B7280")   // gray
 }

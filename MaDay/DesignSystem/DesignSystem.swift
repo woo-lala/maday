@@ -18,6 +18,7 @@ enum AppColor {
     static let youtube = Color.mdYoutube
     static let shopping = Color.mdShopping
     static let cooking = Color.mdCooking
+    static let personal = Color.mdYoutube
 
     static let neutralButton = Color.mdBackground
     static let textPrimary = Color.mdTextPrimary
@@ -57,7 +58,7 @@ enum AppSpacing {
 enum AppRadius {
     static let standard: CGFloat = 16 // cards/containers
     static let button: CGFloat = 12
-    static let badge: CGFloat = 4
+    static let badge: CGFloat = 16
 }
 
 enum AppShadow {

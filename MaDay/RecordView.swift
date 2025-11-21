@@ -69,8 +69,26 @@ struct RecordView: View {
 
     private var tasksSection: some View {
         VStack(alignment: .leading, spacing: AppSpacing.medium) {
-            Text("My Tasks")
-                .sectionTitleStyle()
+            HStack {
+                Text("My Tasks")
+                    .sectionTitleStyle()
+
+                Spacer()
+
+                Button {
+                    showAddTask = true
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(AppColor.white)
+                        .frame(width: 32, height: 32)
+                        .background(
+                            RoundedRectangle(cornerRadius: AppRadius.button, style: .continuous)
+                                .fill(AppColor.primary)
+                        )
+                }
+                .buttonStyle(.plain)
+            }
 
             VStack(spacing: AppSpacing.smallPlus) {
                 ForEach(tasks) { task in
@@ -81,20 +99,11 @@ struct RecordView: View {
                             task: task,
                             isSelected: selectedTaskID == task.id,
                             isActive: activeTaskID == task.id,
-                            trackedTime: task.trackedTime
+                            trackedTime: task.trackedTime,
+                            onToggleComplete: { toggleCompletion(for: task.id) }
                         )
                     }
                     .buttonStyle(.plain)
-                }
-            }
-
-            AppButton(style: .primary) {
-                showAddTask = true
-            } label: {
-                HStack(spacing: AppSpacing.small) {
-                    Image(systemName: "plus")
-                        .font(AppFont.button())
-                    Text("Add Task")
                 }
             }
         }
@@ -214,6 +223,12 @@ struct RecordView: View {
         guard let index = tasks.firstIndex(where: { $0.id == id }) else { return }
         mutate(&tasks[index])
     }
+
+    private func toggleCompletion(for id: UUID) {
+        updateTask(with: id) { item in
+            item.isCompleted.toggle()
+        }
+    }
 }
 
 private struct TaskCardView: View {
@@ -221,30 +236,33 @@ private struct TaskCardView: View {
     let isSelected: Bool
     let isActive: Bool
     let trackedTime: TimeInterval
+    let onToggleComplete: () -> Void
 
     var body: some View {
         HStack(spacing: AppSpacing.medium) {
-            Image(systemName: "checkmark.square")
-                .foregroundColor(isSelected ? AppColor.primary : AppColor.textSecondary)
+            Button(action: onToggleComplete) {
+                Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 22, weight: .semibold))
+            }
+            .buttonStyle(.plain)
+            .foregroundColor(task.isCompleted ? AppColor.primaryStrong : AppColor.textSecondary.opacity(0.7))
 
             VStack(alignment: .leading, spacing: AppSpacing.xSmall) {
                 Text(task.title)
-                    .font(AppFont.heading())
-                    .foregroundColor(AppColor.textPrimary)
+                    .font(AppFont.body())
+                    .foregroundColor(task.isCompleted ? AppColor.textSecondary : AppColor.textPrimary)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
+                    .strikethrough(task.isCompleted, color: AppColor.textSecondary)
 
                 Text("Tracked: \(formattedTrackedTime(trackedTime))")
                     .font(AppFont.caption())
-                    .foregroundColor(AppColor.textSecondary)
+                    .foregroundColor(task.isCompleted ? AppColor.textSecondary.opacity(0.6) : AppColor.textSecondary)
             }
 
             Spacer()
 
             TagBadge(tag: task.tag)
-
-            Image(systemName: isActive ? "timer.circle.fill" : "timer")
-                .foregroundColor(isActive ? AppColor.primary : AppColor.textSecondary.opacity(0.7))
         }
         .padding(.horizontal, AppSpacing.medium)
         .padding(.vertical, AppSpacing.smallPlus)
@@ -258,12 +276,18 @@ private struct TaskCardView: View {
     }
 
     private var backgroundColor: Color {
-        isActive ? AppColor.primary.opacity(0.12) : AppColor.surface
+        if isActive {
+            return AppColor.primary.opacity(0.22)
+        }
+        if isSelected {
+            return AppColor.primary.opacity(0.12)
+        }
+        return AppColor.surface
     }
 
     private var borderColor: Color {
         if isActive {
-            return AppColor.primary
+            return AppColor.primaryStrong
         }
         if isSelected {
             return AppColor.primaryStrong.opacity(0.9)
@@ -273,7 +297,7 @@ private struct TaskCardView: View {
 
     private var borderWidth: CGFloat {
         if isActive {
-            return 2
+            return 2.5
         }
         return isSelected ? 2 : 0
     }
@@ -423,7 +447,7 @@ struct TaskItem: Identifiable {
             case .learn:
                 return AppColor.learning
             case .personal:
-                return AppColor.shopping
+                return AppColor.personal
             case .shopping:
                 return AppColor.shopping
             case .cooking:
@@ -437,6 +461,7 @@ struct TaskItem: Identifiable {
     let tag: Tag
     var trackedTime: TimeInterval = 0
     var detail: String = ""
+    var isCompleted: Bool = false
 }
 
 private struct TagBadge: View {

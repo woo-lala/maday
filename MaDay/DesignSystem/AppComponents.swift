@@ -123,8 +123,10 @@ struct AppBadge: View {
             .font(AppFont.badge())
             .padding(.horizontal, AppSpacing.smallPlus)
             .padding(.vertical, AppSpacing.small)
-            .background(color.opacity(0.12))
+            .background(
+                Capsule()
+                    .fill(color.opacity(0.12))
+            )
             .foregroundColor(color)
-            .cornerRadius(AppRadius.badge)
     }
 }

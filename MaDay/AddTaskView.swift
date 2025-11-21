@@ -242,7 +242,7 @@ enum TaskCategory: String, CaseIterable, Identifiable {
     var color: Color {
         switch self {
         case .work: return AppColor.work
-        case .personal: return AppColor.shopping
+        case .personal: return AppColor.personal
         }
     }
 
