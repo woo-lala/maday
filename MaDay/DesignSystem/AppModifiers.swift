@@ -7,7 +7,7 @@ struct PrimaryButtonModifier: ViewModifier {
             .frame(height: AppMetrics.buttonHeight)
             .foregroundColor(AppColor.white)
             .background(
-                RoundedRectangle(cornerRadius: AppRadius.standard, style: .continuous)
+                RoundedRectangle(cornerRadius: AppRadius.button, style: .continuous)
                     .fill(AppColor.primary)
             )
     }
@@ -20,7 +20,7 @@ struct SecondaryButtonModifier: ViewModifier {
             .frame(height: AppMetrics.buttonHeight)
             .foregroundColor(AppColor.white)
             .background(
-                RoundedRectangle(cornerRadius: AppRadius.standard, style: .continuous)
+                RoundedRectangle(cornerRadius: AppRadius.button, style: .continuous)
                     .fill(AppColor.secondaryStrong)
             )
     }
@@ -33,12 +33,25 @@ struct NeutralButtonModifier: ViewModifier {
             .frame(height: AppMetrics.buttonHeight)
             .foregroundColor(AppColor.textSecondary)
             .background(
-                RoundedRectangle(cornerRadius: AppRadius.standard, style: .continuous)
+                RoundedRectangle(cornerRadius: AppRadius.button, style: .continuous)
                     .fill(AppColor.neutralButton)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: AppRadius.standard, style: .continuous)
+                RoundedRectangle(cornerRadius: AppRadius.button, style: .continuous)
                     .stroke(AppColor.textSecondary.opacity(0.35), lineWidth: 1)
+            )
+    }
+}
+
+struct DestructiveButtonModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .frame(maxWidth: .infinity)
+            .frame(height: AppMetrics.buttonHeight)
+            .foregroundColor(AppColor.white)
+            .background(
+                RoundedRectangle(cornerRadius: AppRadius.button, style: .continuous)
+                    .fill(AppColor.destructive)
             )
     }
 }
@@ -67,7 +80,7 @@ struct AppBarTitleModifier: ViewModifier {
 struct SectionTitleModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
-            .font(AppFont.headline())
+            .font(AppFont.title())
             .foregroundColor(AppColor.textPrimary)
     }
 }
@@ -122,6 +135,10 @@ extension View {
 
     func neutralButtonStyle() -> some View {
         modifier(NeutralButtonModifier())
+    }
+
+    func destructiveButtonStyle() -> some View {
+        modifier(DestructiveButtonModifier())
     }
 
     func sectionCardStyle() -> some View {

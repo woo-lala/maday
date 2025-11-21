@@ -38,7 +38,7 @@ struct RecordView: View {
                         timerSection
                         timerControls
                     }
-                    .padding(.horizontal, AppSpacing.medium)
+                    .padding(.horizontal, AppSpacing.mediumPlus)
                     .padding(.top, AppSpacing.large)
                     .padding(.bottom, AppSpacing.xLarge)
                 }
@@ -225,7 +225,7 @@ private struct TaskCardView: View {
     var body: some View {
         HStack(spacing: AppSpacing.medium) {
             Image(systemName: "checkmark.square")
-                .foregroundColor(AppColor.textSecondary)
+                .foregroundColor(isSelected ? AppColor.primary : AppColor.textSecondary)
 
             VStack(alignment: .leading, spacing: AppSpacing.xSmall) {
                 Text(task.title)
@@ -301,7 +301,7 @@ private struct TimerSectionView: View {
     var body: some View {
         VStack(spacing: AppSpacing.small) {
             Text(formattedTime(currentTime))
-                .font(AppFont.largeTitle())
+                .font(AppFont.timerDisplay())
                 .foregroundColor(AppColor.textPrimary)
 
             Text("Total Time Today: \(formattedTotal(totalTime))")
@@ -339,19 +339,28 @@ private struct TimerControlView: View {
     var body: some View {
         HStack(spacing: AppSpacing.small) {
             AppButton(style: .primary, action: onStart) {
-                Text("Start")
+                HStack(spacing: AppSpacing.small) {
+                    Image(systemName: "play.fill")
+                    Text("Start")
+                }
             }
             .disabled(!canStart)
             .opacity(canStart ? 1 : 0.5)
 
-            AppButton(style: .secondary, action: onPause) {
-                Text("Pause")
+            AppButton(style: .neutral, action: onPause) {
+                HStack(spacing: AppSpacing.small) {
+                    Image(systemName: "pause.fill")
+                    Text("Pause")
+                }
             }
             .disabled(!canPause)
             .opacity(canPause ? 1 : 0.5)
 
-            AppButton(style: .neutral, action: onStop) {
-                Text("Stop")
+            AppButton(style: .destructive, action: onStop) {
+                HStack(spacing: AppSpacing.small) {
+                    Image(systemName: "stop.fill")
+                    Text("Stop")
+                }
             }
             .disabled(!canStop)
             .opacity(canStop ? 1 : 0.5)
@@ -363,10 +372,10 @@ private struct CustomTabBar: View {
     @Binding var selectedTab: TabItem.Tab
 
     private let tabs: [TabItem] = [
-        TabItem(tab: .home, label: "Home", icon: "house.fill"),
-        TabItem(tab: .report, label: "Report", icon: "chart.bar.xaxis"),
+        TabItem(tab: .home, label: "Record", icon: "timer"),
+        TabItem(tab: .report, label: "Report", icon: "chart.bar"),
         TabItem(tab: .compare, label: "Compare", icon: "chart.line.uptrend.xyaxis"),
-        TabItem(tab: .activity, label: "Activity", icon: "figure.walk"),
+        TabItem(tab: .activity, label: "Activity", icon: "tag"),
         TabItem(tab: .settings, label: "Settings", icon: "gearshape")
     ]
 
@@ -388,7 +397,7 @@ private struct CustomTabBar: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, AppSpacing.medium)
+        .padding(.horizontal, AppSpacing.mediumPlus)
         .padding(.vertical, AppSpacing.smallPlus)
     }
 }
@@ -400,19 +409,25 @@ struct TaskItem: Identifiable {
         case youtube = "YouTube"
         case learn = "Learn"
         case personal = "Personal"
+        case shopping = "Shopping"
+        case cooking = "Cooking"
 
         var color: Color {
             switch self {
             case .work:
-                return AppColor.primary
+                return AppColor.work
             case .fitness:
                 return AppColor.fitness
             case .youtube:
-                return AppColor.secondary
+                return AppColor.youtube
             case .learn:
                 return AppColor.learning
             case .personal:
-                return AppColor.secondary
+                return AppColor.shopping
+            case .shopping:
+                return AppColor.shopping
+            case .cooking:
+                return AppColor.cooking
             }
         }
     }
@@ -428,13 +443,7 @@ private struct TagBadge: View {
     let tag: TaskItem.Tag
 
     var body: some View {
-        Text(tag.rawValue)
-            .font(AppFont.badge())
-            .padding(.horizontal, AppSpacing.medium)
-            .padding(.vertical, AppSpacing.small)
-            .background(tag.color.opacity(0.12))
-            .foregroundColor(tag.color)
-            .cornerRadius(AppRadius.standard)
+        AppBadge(title: tag.rawValue, color: tag.color)
     }
 }
 

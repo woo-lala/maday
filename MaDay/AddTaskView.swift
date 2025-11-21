@@ -20,7 +20,7 @@ struct AddTaskView: View {
                         categoryFilter
                         existingTasksSection
                     }
-                    .padding(.horizontal, AppSpacing.medium)
+                    .padding(.horizontal, AppSpacing.mediumPlus)
                     .padding(.top, AppSpacing.large)
                     .padding(.bottom, AppSpacing.xLarge)
                 }
@@ -176,7 +176,7 @@ struct AddTaskView: View {
             AppColor.clear
                 .frame(height: AppSpacing.xSmall)
         }
-        .padding(.horizontal, AppSpacing.medium)
+        .padding(.horizontal, AppSpacing.mediumPlus)
         .padding(.top, AppSpacing.smallPlus)
         .padding(.bottom, AppSpacing.small)
         .background(AppColor.surface.shadow(color: AppShadow.card.opacity(0.5), radius: 4, x: 0, y: -2))
@@ -241,8 +241,8 @@ enum TaskCategory: String, CaseIterable, Identifiable {
 
     var color: Color {
         switch self {
-        case .work: return AppColor.primary
-        case .personal: return AppColor.secondary
+        case .work: return AppColor.work
+        case .personal: return AppColor.shopping
         }
     }
 

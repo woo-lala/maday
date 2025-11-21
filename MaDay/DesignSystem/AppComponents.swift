@@ -5,6 +5,7 @@ struct AppButton<Label: View>: View {
         case primary
         case secondary
         case neutral
+        case destructive
     }
 
     let style: Style
@@ -26,6 +27,8 @@ struct AppButton<Label: View>: View {
             button.secondaryButtonStyle()
         case .neutral:
             button.neutralButtonStyle()
+        case .destructive:
+            button.destructiveButtonStyle()
         }
     }
 
@@ -108,5 +111,20 @@ struct AppSectionHeader: View {
                 .font(AppFont.callout())
                 .foregroundColor(AppColor.textSecondary)
         }
+    }
+}
+
+struct AppBadge: View {
+    let title: String
+    let color: Color
+
+    var body: some View {
+        Text(title)
+            .font(AppFont.badge())
+            .padding(.horizontal, AppSpacing.smallPlus)
+            .padding(.vertical, AppSpacing.small)
+            .background(color.opacity(0.12))
+            .foregroundColor(color)
+            .cornerRadius(AppRadius.badge)
     }
 }

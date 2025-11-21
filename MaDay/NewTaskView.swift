@@ -23,7 +23,7 @@ struct NewTaskView: View {
                 VStack(alignment: .leading, spacing: AppSpacing.large) {
                     formSection
                 }
-                .padding(.horizontal, AppSpacing.medium)
+                .padding(.horizontal, AppSpacing.mediumPlus)
                 .padding(.top, AppSpacing.large)
                 .padding(.bottom, AppSpacing.xLarge)
             }
@@ -142,7 +142,7 @@ struct NewTaskView: View {
             AppColor.clear
                 .frame(height: AppSpacing.xSmall)
         }
-        .padding(.horizontal, AppSpacing.medium)
+        .padding(.horizontal, AppSpacing.mediumPlus)
         .padding(.top, AppSpacing.smallPlus)
         .padding(.bottom, AppSpacing.small)
         .background(AppColor.surface.shadow(color: AppShadow.card.opacity(0.5), radius: 4, x: 0, y: -2))
