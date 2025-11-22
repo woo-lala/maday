@@ -15,10 +15,10 @@ struct RecordView: View {
 
     init() {
         let initialTasks: [TaskItem] = [
-            TaskItem(title: "Work on Project Dayflow", tag: .work, detail: "Finalize sprint backlog and sync with design"),
-            TaskItem(title: "Read Atomic Habits", tag: .personal, detail: "Read 20 pages before bed"),
-            TaskItem(title: "30 min HIIT Session", tag: .fitness, detail: "Power session from the Daily Burn plan"),
-            TaskItem(title: "Review YouTube Analytics", tag: .work, detail: "Check watch time and retention charts")
+            TaskItem(title: "Work on Project Dayflow", tag: .work, detail: "Finalize sprint backlog and sync with design", categoryTitle: "Work", categoryColor: TaskItem.Tag.work.color),
+            TaskItem(title: "Read Atomic Habits", tag: .personal, detail: "Read 20 pages before bed", categoryTitle: "Personal", categoryColor: TaskItem.Tag.personal.color),
+            TaskItem(title: "30 min HIIT Session", tag: .fitness, detail: "Power session from the Daily Burn plan", categoryTitle: "Fitness", categoryColor: TaskItem.Tag.fitness.color),
+            TaskItem(title: "Review YouTube Analytics", tag: .work, detail: "Check watch time and retention charts", categoryTitle: "Work", categoryColor: TaskItem.Tag.work.color)
         ]
         _tasks = State(initialValue: initialTasks)
         _selectedTaskID = State(initialValue: initialTasks.first?.id)
@@ -263,7 +263,7 @@ private struct TaskCardView: View {
 
             Spacer()
 
-            TagBadge(tag: task.tag)
+            TagBadge(title: task.categoryTitle ?? task.tag.rawValue, color: task.categoryColor ?? task.tag.color)
         }
         .padding(.horizontal, AppSpacing.medium)
         .padding(.vertical, AppSpacing.smallPlus)
@@ -463,13 +463,25 @@ struct TaskItem: Identifiable {
     var trackedTime: TimeInterval = 0
     var detail: String = ""
     var isCompleted: Bool = false
+    var categoryTitle: String? = nil
+    var categoryColor: Color? = nil
 }
 
 private struct TagBadge: View {
-    let tag: TaskItem.Tag
+    let title: String
+    let color: Color
 
     var body: some View {
-        AppBadge(title: tag.rawValue, color: tag.color)
+        Text(title)
+            .font(AppFont.callout())
+            .fontWeight(.semibold)
+            .padding(.horizontal, AppSpacing.smallPlus)
+            .padding(.vertical, AppSpacing.xSmall)
+            .background(
+                Capsule()
+                    .fill(color)
+            )
+            .foregroundColor(AppColor.white)
     }
 }
 

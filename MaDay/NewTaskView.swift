@@ -8,11 +8,26 @@ struct NewTaskView: View {
 
     @State private var newTaskName = ""
     @State private var newTaskDescription = ""
-    @State private var selectedCategory: TaskCategory = .work
+    @State private var categoryOptions: [CategoryOption] = CategoryOption.defaults
+    @State private var selectedCategoryId: UUID?
     @State private var categoryPickerExpanded = false
+    @State private var newCategoryName = ""
+    @State private var newCategoryColor: Color = TaskItem.Tag.work.color
+    @State private var newCategoryColorId: String = "work"
+    @State private var showAddCategoryForm = false
 
     private var trimmedTaskName: String {
         newTaskName.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var selectedCategory: CategoryOption? {
+        categoryOptions.first { $0.id == selectedCategoryId } ?? categoryOptions.first
+    }
+
+    private var availablePalette: [ColorChoice] {
+        let used = Set(categoryOptions.map { $0.colorId })
+        let excluded = used.union([ColorChoice.primaryConflictId])
+        return Array(ColorChoice.base.filter { !excluded.contains($0.id) }.prefix(4))
     }
 
     var body: some View {
@@ -60,59 +75,140 @@ struct NewTaskView: View {
                     .foregroundColor(AppColor.textSecondary)
 
                 VStack(spacing: 0) {
-                    Button {
+                    HStack(spacing: AppSpacing.small) {
+                        Circle()
+                            .fill(selectedCategory?.color ?? AppColor.primary)
+                            .frame(width: AppSpacing.small, height: AppSpacing.small)
+                        Text(selectedCategory?.name ?? "")
+                            .font(AppFont.body())
+                            .foregroundColor(AppColor.textPrimary)
+                        Spacer()
+                        Image(systemName: categoryPickerExpanded ? "chevron.up" : "chevron.down")
+                            .font(AppFont.caption())
+                            .foregroundColor(AppColor.textSecondary)
+                    }
+                    .padding(.horizontal, AppSpacing.medium)
+                    .padding(.vertical, AppSpacing.smallPlus)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
                         withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                             categoryPickerExpanded.toggle()
                         }
-                    } label: {
-                        HStack(spacing: AppSpacing.small) {
-                            Circle()
-                                .fill(selectedCategory.color)
-                                .frame(width: AppSpacing.small, height: AppSpacing.small)
-                            Text(selectedCategory.title)
-                                .font(AppFont.body())
-                                .foregroundColor(AppColor.textPrimary)
-                            Spacer()
-                            Image(systemName: "chevron.down")
-                                .font(AppFont.caption())
-                                .foregroundColor(AppColor.textSecondary)
-                                .rotationEffect(categoryPickerExpanded ? .degrees(180) : .zero)
-                                .animation(.spring(response: 0.35, dampingFraction: 0.7), value: categoryPickerExpanded)
-                        }
-                        .padding(.horizontal, AppSpacing.medium)
-                        .padding(.vertical, AppSpacing.smallPlus)
                     }
-                    .buttonStyle(.plain)
 
                     if categoryPickerExpanded {
                         Divider()
                             .padding(.horizontal, AppSpacing.medium)
 
                         VStack(spacing: AppSpacing.smallPlus) {
-                            ForEach(TaskCategory.allCases) { category in
+                            ForEach(categoryOptions) { category in
+                                HStack {
+                                    Circle()
+                                        .fill(category.color)
+                                        .frame(width: AppSpacing.small, height: AppSpacing.small)
+                                    Text(category.name)
+                                        .font(AppFont.bodyRegular())
+                                        .foregroundColor(AppColor.textPrimary)
+                                    Spacer()
+                                    if selectedCategoryId == category.id {
+                                        Image(systemName: "checkmark")
+                                            .foregroundColor(AppColor.primary)
+                                            .font(AppFont.caption())
+                                    }
+                                }
+                                .padding(.horizontal, AppSpacing.small)
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
+                                        selectedCategoryId = category.id
+                                        categoryPickerExpanded = false
+                                        showAddCategoryForm = false
+                                    }
+                                }
+                            }
+
+                            if showAddCategoryForm {
+                                VStack(alignment: .leading, spacing: AppSpacing.small) {
+                                    HStack(spacing: AppSpacing.small) {
+                                        AppTextField("Name", text: $newCategoryName)
+
+                                        HStack(spacing: AppSpacing.xSmall) {
+                                            ForEach(availablePalette) { choice in
+                                                Circle()
+                                                    .fill(choice.color)
+                                                    .frame(width: 24, height: 24)
+                                                    .overlay(
+                                                        Circle()
+                                                            .stroke(choice.id == newCategoryColorId ? AppColor.primaryStrong : AppColor.border, lineWidth: choice.id == newCategoryColorId ? 2 : 1)
+                                                    )
+                                                    .shadow(color: choice.id == newCategoryColorId ? AppColor.primary.opacity(0.25) : .clear, radius: choice.id == newCategoryColorId ? 3 : 0, x: 0, y: 1)
+                                                    .onTapGesture {
+                                                        newCategoryColor = choice.color
+                                                        newCategoryColorId = choice.id
+                                                    }
+                                            }
+                                        }
+                                        .padding(.horizontal, AppSpacing.xSmall)
+                                    }
+
+                                    HStack(spacing: AppSpacing.small) {
+                                        Button(action: addCategory) {
+                                            Text("Add")
+                                                .font(AppFont.button())
+                                                .frame(maxWidth: .infinity)
+                                                .frame(height: AppMetrics.buttonHeight)
+                                                .foregroundColor(AppColor.white)
+                                                .background(
+                                                    RoundedRectangle(cornerRadius: AppRadius.button, style: .continuous)
+                                                        .fill(AppColor.primary)
+                                                )
+                                        }
+                                        .buttonStyle(.plain)
+                                        .disabled(newCategoryName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+
+                                        Button {
+                                            withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
+                                                showAddCategoryForm = false
+                                                newCategoryName = ""
+                                            }
+                                        } label: {
+                                            Text("Cancel")
+                                                .font(AppFont.button())
+                                                .frame(height: AppMetrics.buttonHeight)
+                                                .foregroundColor(AppColor.textSecondary)
+                                                .padding(.horizontal, AppSpacing.medium)
+                                                .background(
+                                                    RoundedRectangle(cornerRadius: AppRadius.button, style: .continuous)
+                                                        .stroke(AppColor.border, lineWidth: 1)
+                                                )
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
+                            } else {
                                 Button {
                                     withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
-                                        selectedCategory = category
-                                        categoryPickerExpanded = false
+                                        prepareAddCategoryForm()
                                     }
                                 } label: {
                                     HStack {
-                                        Circle()
-                                            .fill(category.color)
-                                            .frame(width: AppSpacing.small, height: AppSpacing.small)
-                                        Text(category.title)
-                                            .font(AppFont.bodyRegular())
-                                            .foregroundColor(AppColor.textPrimary)
-                                        Spacer()
-                                        if selectedCategory == category {
-                                            Image(systemName: "checkmark")
-                                                .foregroundColor(AppColor.primary)
-                                                .font(AppFont.caption())
-                                        }
+                                        Image(systemName: "plus")
+                                            .font(.system(size: 14, weight: .semibold))
+                                            .foregroundColor(AppColor.white)
+                                        Text("Add Category")
+                                            .font(AppFont.body())
+                                            .foregroundColor(AppColor.white)
                                     }
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 36)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: AppRadius.button, style: .continuous)
+                                            .fill(AppColor.primary)
+                                    )
                                     .padding(.horizontal, AppSpacing.small)
                                 }
                                 .buttonStyle(.plain)
+                                .disabled(availablePalette.isEmpty)
                             }
                         }
                         .padding(.horizontal, AppSpacing.medium)
@@ -152,13 +248,82 @@ struct NewTaskView: View {
         let title = trimmedTaskName
         guard !title.isEmpty else { return }
 
+        guard let selectedCategory else { return }
+
         let details = newTaskDescription.trimmingCharacters(in: .whitespacesAndNewlines)
-        let newTask = TaskItem(title: title, tag: selectedCategory.tag, trackedTime: 0, detail: details)
+        let newTask = TaskItem(
+            title: title,
+            tag: selectedCategory.tag,
+            trackedTime: 0,
+            detail: details,
+            categoryTitle: selectedCategory.name,
+            categoryColor: selectedCategory.color
+        )
         tasks.append(newTask)
         onTaskCreated?(newTask)
 
         dismiss()
     }
+
+}
+
+private struct CategoryOption: Identifiable, Hashable {
+    let id = UUID()
+    let name: String
+    let colorId: String
+    let color: Color
+    let tag: TaskItem.Tag
+    let isDefault: Bool
+
+    static let defaults: [CategoryOption] = [
+        CategoryOption(name: "Work", colorId: "work", color: TaskItem.Tag.work.color, tag: .work, isDefault: true),
+        CategoryOption(name: "Personal", colorId: "personal", color: TaskItem.Tag.personal.color, tag: .personal, isDefault: true),
+        CategoryOption(name: "Fitness", colorId: "fitness", color: TaskItem.Tag.fitness.color, tag: .fitness, isDefault: true),
+        CategoryOption(name: "Learn", colorId: "learn", color: TaskItem.Tag.learn.color, tag: .learn, isDefault: true),
+        CategoryOption(name: "YouTube", colorId: "youtube", color: TaskItem.Tag.youtube.color, tag: .youtube, isDefault: true),
+        CategoryOption(name: "Cooking", colorId: "cooking", color: TaskItem.Tag.cooking.color, tag: .cooking, isDefault: true)
+    ]
+}
+
+private struct ColorChoice: Identifiable {
+    let id: String
+    let color: Color
+
+    static let base: [ColorChoice] = [
+        ColorChoice(id: "emerald", color: Color(hex: "10B981")),
+        ColorChoice(id: "amber", color: Color(hex: "F59E0B")),
+        ColorChoice(id: "fuchsia", color: Color(hex: "EC4899")),
+        ColorChoice(id: "teal", color: Color(hex: "14B8A6")),
+        ColorChoice(id: "indigo", color: Color(hex: "6366F1")),
+        ColorChoice(id: "rose", color: Color(hex: "F43F5E")),
+        ColorChoice(id: "slate", color: Color(hex: "64748B")),
+        ColorChoice(id: "lime", color: Color(hex: "84CC16"))
+    ]
+
+    static let primaryConflictId = "azure"
+}
+
+private extension NewTaskView {
+    private func addCategory() {
+        let name = newCategoryName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return }
+
+        let option = CategoryOption(name: name, colorId: newCategoryColorId, color: newCategoryColor, tag: .personal, isDefault: false)
+        categoryOptions.append(option)
+        selectedCategoryId = option.id
+        newCategoryName = ""
+        showAddCategoryForm = false
+        categoryPickerExpanded = false
+    }
+
+    private func prepareAddCategoryForm() {
+        if let first = availablePalette.first {
+            newCategoryColor = first.color
+            newCategoryColorId = first.id
+        }
+        showAddCategoryForm = true
+    }
+
 }
 
 #Preview {

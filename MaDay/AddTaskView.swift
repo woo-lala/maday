@@ -70,7 +70,10 @@ struct AddTaskView: View {
                                 filterExpanded = false
                             }
                         } label: {
-                            HStack {
+                            HStack(spacing: AppSpacing.small) {
+                                Circle()
+                                    .fill(filter.category.color)
+                                    .frame(width: AppSpacing.smallPlus, height: AppSpacing.smallPlus)
                                 Text(filter.title)
                                     .font(AppFont.bodyRegular())
                                     .foregroundColor(AppColor.textPrimary)
@@ -170,10 +173,8 @@ struct AddTaskView: View {
         switch selectedFilter {
         case .all:
             base = TaskCategory.allCases
-        case .work:
-            base = [.work]
-        case .personal:
-            base = [.personal]
+        default:
+            base = [selectedFilter.category]
         }
         return base.filter { !filteredTasks(for: $0).isEmpty }
     }
@@ -212,6 +213,11 @@ struct AddTaskView: View {
 enum TaskCategory: String, CaseIterable, Identifiable {
     case work
     case personal
+    case fitness
+    case learn
+    case youtube
+    case cooking
+    case shopping
 
     var id: String { rawValue }
 
@@ -219,6 +225,11 @@ enum TaskCategory: String, CaseIterable, Identifiable {
         switch self {
         case .work: return "Work"
         case .personal: return "Personal"
+        case .fitness: return "Fitness"
+        case .learn: return "Learn"
+        case .youtube: return "YouTube"
+        case .cooking: return "Cooking"
+        case .shopping: return "Shopping"
         }
     }
 
@@ -226,6 +237,11 @@ enum TaskCategory: String, CaseIterable, Identifiable {
         switch self {
         case .work: return AppColor.work
         case .personal: return AppColor.personal
+        case .fitness: return AppColor.fitness
+        case .learn: return AppColor.learning
+        case .youtube: return AppColor.youtube
+        case .cooking: return AppColor.cooking
+        case .shopping: return AppColor.shopping
         }
     }
 
@@ -233,15 +249,16 @@ enum TaskCategory: String, CaseIterable, Identifiable {
         switch self {
         case .work: return .work
         case .personal: return .personal
+        case .fitness: return .fitness
+        case .learn: return .learn
+        case .youtube: return .youtube
+        case .cooking: return .cooking
+        case .shopping: return .shopping
         }
     }
 
     func matches(tag: TaskItem.Tag) -> Bool {
-        switch (self, tag) {
-        case (.work, .work): return true
-        case (.personal, .personal), (.personal, .fitness), (.personal, .youtube), (.personal, .learn): return true
-        default: return false
-        }
+        return self.tag == tag
     }
 }
 
@@ -249,6 +266,11 @@ enum TaskCategoryFilter: String, CaseIterable, Identifiable {
     case all
     case work
     case personal
+    case fitness
+    case learn
+    case youtube
+    case cooking
+    case shopping
 
     var id: String { rawValue }
 
@@ -257,6 +279,24 @@ enum TaskCategoryFilter: String, CaseIterable, Identifiable {
         case .all: return "All Categories"
         case .work: return "Work"
         case .personal: return "Personal"
+        case .fitness: return "Fitness"
+        case .learn: return "Learn"
+        case .youtube: return "YouTube"
+        case .cooking: return "Cooking"
+        case .shopping: return "Shopping"
+        }
+    }
+
+    var category: TaskCategory {
+        switch self {
+        case .all: return .work // unused when .all
+        case .work: return .work
+        case .personal: return .personal
+        case .fitness: return .fitness
+        case .learn: return .learn
+        case .youtube: return .youtube
+        case .cooking: return .cooking
+        case .shopping: return .shopping
         }
     }
 }
@@ -269,13 +309,9 @@ private struct ExistingTaskCard: View {
     var body: some View {
         HStack(alignment: .top, spacing: AppSpacing.medium) {
             Circle()
-                .strokeBorder(indicatorColor, lineWidth: 2)
+                .fill(indicatorColor)
                 .frame(width: AppSpacing.medium, height: AppSpacing.medium)
-                .overlay(
-                    Circle()
-                        .fill(indicatorColor.opacity(0.12))
-                        .frame(width: AppSpacing.medium - AppSpacing.small, height: AppSpacing.medium - AppSpacing.small)
-                )
+                .shadow(color: indicatorColor.opacity(0.25), radius: 2, x: 0, y: 1)
 
             VStack(alignment: .leading, spacing: AppSpacing.xSmall) {
                 Text(task.title)
