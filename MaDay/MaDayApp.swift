@@ -11,7 +11,7 @@ import SwiftUI
 struct MaDayApp: App {
     var body: some Scene {
         WindowGroup {
-            RecordView()
+            ContentView()
         }
     }
 }

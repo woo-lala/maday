@@ -3,8 +3,10 @@ import Combine
 import UniformTypeIdentifiers
 
 struct RecordView: View {
+    var showsTabBar: Bool = false
+    var onSelectTab: ((TabItem) -> Void)? = nil
+
     @State private var tasks: [TaskItem]
-    @State private var selectedTab: TabItem.Tab = .home
     @State private var selectedTaskID: UUID?
     @State private var activeTaskID: UUID?
     @State private var isTimerRunning = false
@@ -12,10 +14,14 @@ struct RecordView: View {
     @State private var lastTickDate: Date?
     @State private var showAddTask = false
     @State private var draggingTask: TaskItem?
+    @State private var localTabSelection: TabItem = .home
 
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
-    init() {
+    init(showsTabBar: Bool = false, onSelectTab: ((TabItem) -> Void)? = nil) {
+        self.showsTabBar = showsTabBar
+        self.onSelectTab = onSelectTab
+
         let initialTasks: [TaskItem] = [
             TaskItem(title: "Work on Project Dayflow", tag: .work, detail: "Finalize sprint backlog and sync with design", categoryTitle: "Work", categoryColor: TaskItem.Tag.work.color),
             TaskItem(title: "Read Atomic Habits", tag: .personal, detail: "Read 20 pages before bed", categoryTitle: "Personal", categoryColor: TaskItem.Tag.personal.color),
@@ -32,7 +38,7 @@ struct RecordView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
+            ZStack(alignment: .bottom) {
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: AppSpacing.large) {
                         appBar
@@ -42,14 +48,17 @@ struct RecordView: View {
                     }
                     .padding(.horizontal, AppSpacing.mediumPlus)
                     .padding(.top, AppSpacing.large)
-                    .padding(.bottom, AppSpacing.xLarge)
+                    .padding(.bottom, showsTabBar ? AppSpacing.xLarge + AppMetrics.buttonHeight : AppSpacing.xLarge)
                 }
+                .background(AppColor.background.ignoresSafeArea(edges: .bottom))
 
-                CustomTabBar(selectedTab: $selectedTab)
-                    .padding(.top, AppSpacing.small)
-                    .background(AppColor.surface)
+                if showsTabBar {
+                    CommonTabBar(selectedTab: Binding(get: { localTabSelection }, set: { newValue in
+                        localTabSelection = newValue
+                        onSelectTab?(newValue)
+                    }))
+                }
             }
-            .background(AppColor.background.ignoresSafeArea(edges: .bottom))
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(isPresented: $showAddTask) {
                 addTaskDestination
@@ -430,40 +439,6 @@ private struct TaskDropDelegate: DropDelegate {
     }
 }
 
-private struct CustomTabBar: View {
-    @Binding var selectedTab: TabItem.Tab
-
-    private let tabs: [TabItem] = [
-        TabItem(tab: .home, label: "Record", icon: "timer"),
-        TabItem(tab: .report, label: "Report", icon: "chart.bar"),
-        TabItem(tab: .compare, label: "Compare", icon: "chart.line.uptrend.xyaxis"),
-        TabItem(tab: .activity, label: "Activity", icon: "tag"),
-        TabItem(tab: .settings, label: "Settings", icon: "gearshape")
-    ]
-
-    var body: some View {
-        HStack {
-            ForEach(tabs) { item in
-                Button {
-                    selectedTab = item.tab
-                } label: {
-                    VStack(spacing: AppSpacing.xSmall) {
-                        Image(systemName: item.icon)
-                            .font(AppFont.heading())
-                        Text(item.label)
-                            .font(AppFont.caption())
-                    }
-                    .foregroundColor(selectedTab == item.tab ? AppColor.primary : AppColor.textSecondary.opacity(0.6))
-                    .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(.horizontal, AppSpacing.mediumPlus)
-        .padding(.vertical, AppSpacing.smallPlus)
-    }
-}
-
 struct TaskItem: Identifiable {
     enum Tag: String {
         case work = "Work"
@@ -522,18 +497,7 @@ private struct TagBadge: View {
     }
 }
 
-private struct TabItem: Identifiable {
-    enum Tab {
-        case home, report, compare, activity, settings
-    }
-
-    let id = UUID()
-    let tab: Tab
-    let label: String
-    let icon: String
-}
-
 #Preview {
-    RecordView()
+    RecordView(showsTabBar: true)
         .background(AppColor.background)
 }
