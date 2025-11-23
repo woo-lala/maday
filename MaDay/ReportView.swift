@@ -65,48 +65,68 @@ struct ReportView: View {
 
     // MARK: Weekly Performance Overview
     private var weeklyTimeline: some View {
-        VStack(alignment: .leading, spacing: AppSpacing.small) {
+        VStack(alignment: .leading, spacing: AppSpacing.medium) {
             Text("Weekly Performance Overview")
                 .sectionTitleStyle()
 
             GeometryReader { geo in
-                let barWidth = (geo.size.width - AppSpacing.small * 6) / 7
+                let chartHeight: CGFloat = 240
+                let axisWidth: CGFloat = 40
+                let gap: CGFloat = AppSpacing.xSmall
+                let barWidth = (geo.size.width - axisWidth - gap * 6) / 7
 
-                HStack(alignment: .top, spacing: AppSpacing.small) {
-                    ForEach(weeklyTimelineData) { day in
-                        ZStack(alignment: .top) {
-                            RoundedRectangle(cornerRadius: AppRadius.button)
-                                .fill(AppColor.surface)
-                                .frame(width: barWidth, height: 220)
-                                .overlay(alignment: .topLeading) {
-                                    VStack(alignment: .leading, spacing: AppSpacing.xSmall) {
-                                        timeGrid(height: 220)
-                                    }
-                                }
+                VStack(spacing: AppSpacing.small) {
+                    HStack(alignment: .top, spacing: gap) {
+                        ZStack(alignment: .topLeading) {
+                            ForEach(Array(timeTicks.enumerated()), id: \.offset) { _, tick in
+                                let y = chartHeight * CGFloat(tick.position)
+                                Rectangle()
+                                    .fill(AppColor.border)
+                                    .frame(height: 1)
+                                    .opacity(0.4)
+                                    .offset(y: y)
 
-                            ZStack(alignment: .top) {
-                                ForEach(day.blocks) { block in
+                                Text(tick.label)
+                                    .font(AppFont.caption())
+                                    .foregroundColor(AppColor.textSecondary)
+                                    .offset(x: 0, y: y - 6)
+                            }
+                        }
+                        .frame(width: axisWidth, height: chartHeight, alignment: .topLeading)
+
+                        HStack(alignment: .top, spacing: gap) {
+                            ForEach(weeklyTimelineData) { day in
+                                ZStack(alignment: .top) {
                                     RoundedRectangle(cornerRadius: AppRadius.button)
-                                        .fill(categoryColors[block.category] ?? AppColor.primary)
-                                        .frame(width: barWidth, height: CGFloat(block.durationRatio) * 220)
-                                        .offset(y: CGFloat(block.startRatio) * 220)
+                                        .fill(AppColor.surface)
+                                        .frame(width: barWidth, height: chartHeight)
+
+                                    ZStack(alignment: .top) {
+                                        ForEach(day.blocks) { block in
+                                            RoundedRectangle(cornerRadius: AppRadius.button)
+                                                .fill(categoryColors[block.category] ?? AppColor.primary)
+                                                .frame(width: barWidth, height: CGFloat(block.durationRatio) * chartHeight)
+                                                .offset(y: CGFloat(block.startRatio) * chartHeight)
+                                        }
+                                    }
                                 }
                             }
                         }
+                        .frame(height: chartHeight)
+                    }
+
+                    HStack(alignment: .center, spacing: gap) {
+                        Spacer().frame(width: axisWidth)
+                        ForEach(weeklyTimelineData) { day in
+                            Text(day.day)
+                                .font(AppFont.caption())
+                                .foregroundColor(AppColor.textSecondary)
+                                .frame(width: barWidth)
+                        }
                     }
                 }
-                .frame(maxWidth: .infinity, alignment: .center)
             }
-            .frame(height: 240)
-
-            HStack {
-                ForEach(["Mon","Tue","Wed","Thu","Fri","Sat","Sun"], id: \.self) { day in
-                    Text(day)
-                        .font(AppFont.caption())
-                        .foregroundColor(AppColor.textSecondary)
-                        .frame(maxWidth: .infinity)
-                }
-            }
+            .frame(height: 280)
         }
     }
 
@@ -154,7 +174,7 @@ struct ReportView: View {
 
     // MARK: Weekly Distribution
     private var weeklyDistribution: some View {
-        VStack(alignment: .leading, spacing: AppSpacing.small) {
+        VStack(alignment: .leading, spacing: AppSpacing.medium) {
             Text("Weekly Distribution")
                 .sectionTitleStyle()
 
@@ -327,6 +347,14 @@ private struct DayTimeline: Identifiable {
         ])
     ]
 }
+
+private let timeTicks: [(label: String, position: Double)] = [
+    ("00:00", 0.0),
+    ("06:00", 0.25),
+    ("12:00", 0.5),
+    ("18:00", 0.75),
+    ("24:00", 1.0)
+]
 
 private struct CategoryRatio: Identifiable {
     let id = UUID()
