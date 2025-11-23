@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+import UniformTypeIdentifiers
 
 struct RecordView: View {
     @State private var tasks: [TaskItem]
@@ -10,6 +11,7 @@ struct RecordView: View {
     @State private var sessionElapsed: TimeInterval = 0
     @State private var lastTickDate: Date?
     @State private var showAddTask = false
+    @State private var draggingTask: TaskItem?
 
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -104,6 +106,11 @@ struct RecordView: View {
                         )
                     }
                     .buttonStyle(.plain)
+                    .onDrag {
+                        draggingTask = task
+                        return NSItemProvider(object: task.id.uuidString as NSString)
+                    }
+                    .onDrop(of: [UTType.text], delegate: TaskDropDelegate(target: task, tasks: $tasks, draggingTask: $draggingTask))
                 }
             }
         }
@@ -390,6 +397,36 @@ private struct TimerControlView: View {
             .disabled(!canStop)
             .opacity(canStop ? 1 : 0.5)
         }
+    }
+}
+
+private struct TaskDropDelegate: DropDelegate {
+    let target: TaskItem
+    @Binding var tasks: [TaskItem]
+    @Binding var draggingTask: TaskItem?
+
+    func validateDrop(info: DropInfo) -> Bool {
+        info.hasItemsConforming(to: [UTType.text])
+    }
+
+    func dropEntered(info: DropInfo) {
+        guard let draggingTask, draggingTask.id != target.id else { return }
+        if let fromIndex = tasks.firstIndex(where: { $0.id == draggingTask.id }),
+           let toIndex = tasks.firstIndex(where: { $0.id == target.id }) {
+            withAnimation(.easeInOut(duration: 0.15)) {
+                let item = tasks.remove(at: fromIndex)
+                tasks.insert(item, at: toIndex)
+            }
+        }
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        DropProposal(operation: .move)
+    }
+
+    func performDrop(info: DropInfo) -> Bool {
+        draggingTask = nil
+        return true
     }
 }
 
