@@ -152,12 +152,14 @@ struct ReportView: View {
             Text("Weekly Category Ratio")
                 .sectionTitleStyle()
 
-            HStack(alignment: .center, spacing: AppSpacing.medium) {
-                DonutChart(data: categoryRatioData, colors: categoryColors)
-                    .frame(width: 180, height: 180)
+            let sortedData = categoryRatioData.sorted { $0.percentage > $1.percentage }
 
-                VStack(alignment: .leading, spacing: AppSpacing.small) {
-                    ForEach(categoryRatioData) { item in
+            VStack(spacing: AppSpacing.large) {
+                DonutChart(data: sortedData, colors: categoryColors)
+                    .frame(width: 200, height: 200)
+
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 140))], spacing: AppSpacing.medium) {
+                    ForEach(sortedData) { item in
                         HStack(spacing: AppSpacing.small) {
                             Circle()
                                 .fill(categoryColors[item.category] ?? AppColor.primary)
@@ -169,6 +171,7 @@ struct ReportView: View {
                     }
                 }
             }
+            .padding(.top, AppSpacing.medium)
         }
     }
 
@@ -182,21 +185,25 @@ struct ReportView: View {
                 .font(AppFont.caption())
                 .foregroundColor(AppColor.textSecondary)
 
-            HStack(alignment: .bottom, spacing: AppSpacing.small) {
-                ForEach(weeklyDistributionData) { item in
-                    let isSelected = item.day == selectedDay
-                    VStack {
-                        Rectangle()
-                            .fill(isSelected ? AppColor.primaryStrong : AppColor.primary.opacity(0.8))
-                            .frame(width: 28, height: CGFloat(item.totalHours) * 8)
-                            .cornerRadius(AppRadius.button)
-                            .shadow(color: isSelected ? AppColor.primary.opacity(0.3) : .clear, radius: 3, x: 0, y: 2)
-                            .onTapGesture { selectedDay = item.day }
-                        Text(item.day)
-                            .font(AppFont.caption())
-                            .foregroundColor(AppColor.textSecondary)
+            HStack {
+                Spacer()
+                HStack(alignment: .bottom, spacing: AppSpacing.small) {
+                    ForEach(weeklyDistributionData) { item in
+                        let isSelected = item.day == selectedDay
+                        VStack {
+                            Rectangle()
+                                .fill(isSelected ? AppColor.primaryStrong : AppColor.primary.opacity(0.8))
+                                .frame(width: 45, height: CGFloat(item.totalHours) * 18)
+                                .cornerRadius(AppRadius.button)
+                                .shadow(color: isSelected ? AppColor.primary.opacity(0.3) : .clear, radius: 3, x: 0, y: 2)
+                                .onTapGesture { selectedDay = item.day }
+                            Text(item.day)
+                                .font(AppFont.caption())
+                                .foregroundColor(AppColor.textSecondary)
+                        }
                     }
                 }
+                Spacer()
             }
         }
     }
@@ -272,17 +279,13 @@ private struct DonutChart: View {
 
     var body: some View {
         GeometryReader { geo in
-            let size = min(geo.size.width, geo.size.height)
             ZStack {
                 ForEach(segments) { segment in
                     Circle()
                         .trim(from: segment.start, to: segment.end)
-                        .stroke(colors[segment.category] ?? AppColor.primary, style: StrokeStyle(lineWidth: 18, lineCap: .round))
+                        .stroke(colors[segment.category] ?? AppColor.primary, style: StrokeStyle(lineWidth: 30, lineCap: .butt))
                         .rotationEffect(.degrees(-90))
                 }
-                Circle()
-                    .fill(AppColor.surface)
-                    .frame(width: size * 0.55, height: size * 0.55)
             }
         }
     }
