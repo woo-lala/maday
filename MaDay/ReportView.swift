@@ -64,10 +64,21 @@ struct ReportView: View {
     }
 
     // MARK: Weekly Performance Overview
+    @State private var selectedBlockInfo: SelectedBlockInfo?
+
+    private struct SelectedBlockInfo {
+        let day: String
+        let block: DayTimeline.TimelineBlock
+    }
+
     private var weeklyTimeline: some View {
         VStack(alignment: .leading, spacing: AppSpacing.medium) {
             Text("Weekly Performance Overview")
                 .sectionTitleStyle()
+
+            Text("Click a block to view task details.")
+                .font(AppFont.caption())
+                .foregroundColor(AppColor.textSecondary)
 
             GeometryReader { geo in
                 let chartHeight: CGFloat = 240
@@ -103,10 +114,15 @@ struct ReportView: View {
 
                                     ZStack(alignment: .top) {
                                         ForEach(day.blocks) { block in
+                                            let isSelected = selectedBlockInfo?.block.id == block.id
                                             RoundedRectangle(cornerRadius: AppRadius.button)
                                                 .fill(categoryColors[block.category] ?? AppColor.primary)
+                                                .opacity(isSelected ? 1.0 : 0.8)
                                                 .frame(width: barWidth, height: CGFloat(block.durationRatio) * chartHeight)
                                                 .offset(y: CGFloat(block.startRatio) * chartHeight)
+                                                .onTapGesture {
+                                                    selectedBlockInfo = SelectedBlockInfo(day: day.day, block: block)
+                                                }
                                         }
                                     }
                                 }
@@ -127,7 +143,47 @@ struct ReportView: View {
                 }
             }
             .frame(height: 280)
+
+            if let info = selectedBlockInfo {
+                selectedBlockDetailView(info: info)
+            }
         }
+    }
+
+    private func selectedBlockDetailView(info: SelectedBlockInfo) -> some View {
+        let block = info.block
+        let startTime = formatTime(ratio: block.startRatio)
+        let endTime = formatTime(ratio: block.startRatio + block.durationRatio)
+        let duration = formattedDuration(block.durationRatio * 24 * 3600)
+
+        return HStack(spacing: AppSpacing.medium) {
+            Circle()
+                .fill(categoryColors[block.category] ?? AppColor.primary)
+                .frame(width: 12, height: 12)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(block.title)
+                    .font(AppFont.body())
+                    .fontWeight(.semibold)
+                    .foregroundColor(AppColor.textPrimary)
+                
+                Text("\(info.day) • \(startTime) - \(endTime) (\(duration))")
+                    .font(AppFont.caption())
+                    .foregroundColor(AppColor.textSecondary)
+            }
+            Spacer()
+        }
+        .padding(AppSpacing.medium)
+        .background(AppColor.surface)
+        .cornerRadius(AppRadius.standard)
+        .transition(.opacity.combined(with: .move(edge: .top)))
+    }
+
+    private func formatTime(ratio: Double) -> String {
+        let totalMinutes = Int(ratio * 24 * 60)
+        let hours = totalMinutes / 60
+        let minutes = totalMinutes % 60
+        return String(format: "%02d:%02d", hours, minutes)
     }
 
     private func timeGrid(height: CGFloat) -> some View {
@@ -192,7 +248,7 @@ struct ReportView: View {
                         let isSelected = item.day == selectedDay
                         VStack {
                             Rectangle()
-                                .fill(isSelected ? AppColor.primaryStrong : AppColor.primary.opacity(0.8))
+                                .fill(isSelected ? AppColor.primaryStrong : AppColor.primary.opacity(0.7))
                                 .frame(width: 45, height: CGFloat(item.totalHours) * 18)
                                 .cornerRadius(AppRadius.button)
                                 .shadow(color: isSelected ? AppColor.primary.opacity(0.3) : .clear, radius: 3, x: 0, y: 2)
@@ -318,35 +374,36 @@ private struct DayTimeline: Identifiable {
     struct TimelineBlock: Identifiable {
         let id = UUID()
         let category: String
+        let title: String
         let startRatio: Double // 0...1 of day start
         let durationRatio: Double // 0...1 of day
     }
 
     static let sample: [DayTimeline] = [
         DayTimeline(day: "Mon", blocks: [
-            .init(category: "Work", startRatio: 0.25, durationRatio: 0.25),
-            .init(category: "Study", startRatio: 0.6, durationRatio: 0.15)
+            .init(category: "Work", title: "Project Planning", startRatio: 0.25, durationRatio: 0.25),
+            .init(category: "Study", title: "iOS Development", startRatio: 0.6, durationRatio: 0.15)
         ]),
         DayTimeline(day: "Tue", blocks: [
-            .init(category: "Work", startRatio: 0.2, durationRatio: 0.3),
-            .init(category: "Personal", startRatio: 0.65, durationRatio: 0.1)
+            .init(category: "Work", title: "Client Meeting", startRatio: 0.2, durationRatio: 0.3),
+            .init(category: "Personal", title: "Grocery Shopping", startRatio: 0.65, durationRatio: 0.1)
         ]),
         DayTimeline(day: "Wed", blocks: [
-            .init(category: "Work", startRatio: 0.3, durationRatio: 0.25),
-            .init(category: "Leisure", startRatio: 0.7, durationRatio: 0.1)
+            .init(category: "Work", title: "Code Review", startRatio: 0.3, durationRatio: 0.25),
+            .init(category: "Leisure", title: "Gaming", startRatio: 0.7, durationRatio: 0.1)
         ]),
         DayTimeline(day: "Thu", blocks: [
-            .init(category: "Work", startRatio: 0.2, durationRatio: 0.35)
+            .init(category: "Work", title: "Deep Work", startRatio: 0.2, durationRatio: 0.35)
         ]),
         DayTimeline(day: "Fri", blocks: [
-            .init(category: "Work", startRatio: 0.25, durationRatio: 0.3),
-            .init(category: "Health", startRatio: 0.65, durationRatio: 0.1)
+            .init(category: "Work", title: "Weekly Sync", startRatio: 0.25, durationRatio: 0.3),
+            .init(category: "Health", title: "Gym", startRatio: 0.65, durationRatio: 0.1)
         ]),
         DayTimeline(day: "Sat", blocks: [
-            .init(category: "Leisure", startRatio: 0.4, durationRatio: 0.25)
+            .init(category: "Leisure", title: "Movie Night", startRatio: 0.4, durationRatio: 0.25)
         ]),
         DayTimeline(day: "Sun", blocks: [
-            .init(category: "Personal", startRatio: 0.3, durationRatio: 0.2)
+            .init(category: "Personal", title: "Reading", startRatio: 0.3, durationRatio: 0.2)
         ])
     ]
 }
