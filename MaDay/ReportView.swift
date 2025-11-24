@@ -1,8 +1,9 @@
 import SwiftUI
 
 struct ReportView: View {
-    @State private var selectedDateRange: String = "Aug 14 - Aug 20"
+    @State private var currentWeekStart: Date = Date().startOfWeek
     @State private var selectedDay: String = "Mon"
+    @State private var isCalendarPresented = false
 
     private let categoryColors: [String: Color] = [
         "Work": AppColor.work,
@@ -12,10 +13,16 @@ struct ReportView: View {
         "Personal": AppColor.personal
     ]
 
-    private let weeklyTimelineData: [DayTimeline] = DayTimeline.sample
-    private let categoryRatioData: [CategoryRatio] = CategoryRatio.sample
-    private let weeklyDistributionData: [DayDistribution] = DayDistribution.sample
-    private let dailyActivitiesData: [DailyTask] = DailyTask.sample
+    private var weeklyTimelineData: [DayTimeline] { DayTimeline.sample }
+    private var categoryRatioData: [CategoryRatio] { CategoryRatio.sample }
+    
+    private var weeklyDistributionData: [DayDistribution] {
+        DayDistribution.generate(startOfWeek: currentWeekStart)
+    }
+    
+    private var dailyActivitiesData: [DailyTask] {
+        DailyTask.generate(startOfWeek: currentWeekStart)
+    }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -31,6 +38,11 @@ struct ReportView: View {
             .padding(.bottom, AppSpacing.xLarge)
         }
         .background(AppColor.background.ignoresSafeArea())
+        .sheet(isPresented: $isCalendarPresented) {
+            CustomCalendarView(selectedDate: $currentWeekStart)
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+        }
     }
 
     // MARK: Header
@@ -48,7 +60,7 @@ struct ReportView: View {
                 }
                 Spacer()
                 Button(action: openCalendar) {
-                    Text(selectedDateRange)
+                    Text(dateRangeString)
                         .font(AppFont.headline())
                         .foregroundColor(AppColor.textPrimary)
                 }
@@ -61,6 +73,13 @@ struct ReportView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+    
+    private var dateRangeString: String {
+        let endOfWeek = Calendar.current.date(byAdding: .day, value: 6, to: currentWeekStart) ?? currentWeekStart
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d"
+        return "\(formatter.string(from: currentWeekStart)) - \(formatter.string(from: endOfWeek))"
     }
 
     // MARK: Weekly Performance Overview
@@ -121,7 +140,11 @@ struct ReportView: View {
                                                 .frame(width: barWidth, height: CGFloat(block.durationRatio) * chartHeight)
                                                 .offset(y: CGFloat(block.startRatio) * chartHeight)
                                                 .onTapGesture {
-                                                    selectedBlockInfo = SelectedBlockInfo(day: day.day, block: block)
+                                                    if selectedBlockInfo?.block.id == block.id {
+                                                        selectedBlockInfo = nil
+                                                    } else {
+                                                        selectedBlockInfo = SelectedBlockInfo(day: day.day, block: block)
+                                                    }
                                                 }
                                         }
                                     }
@@ -308,12 +331,168 @@ struct ReportView: View {
         return "\(hours)h \(minutes)m"
     }
 
-    private func moveToPreviousWeek() {}
-    private func moveToNextWeek() {}
-    private func openCalendar() {}
+    private func moveToPreviousWeek() {
+        currentWeekStart = Calendar.current.date(byAdding: .day, value: -7, to: currentWeekStart) ?? currentWeekStart
+    }
+    
+    private func moveToNextWeek() {
+        currentWeekStart = Calendar.current.date(byAdding: .day, value: 7, to: currentWeekStart) ?? currentWeekStart
+    }
+    
+    private func openCalendar() {
+        isCalendarPresented = true
+    }
 }
 
 // MARK: Components
+private struct CustomCalendarView: View {
+    @Binding var selectedDate: Date
+    @Environment(\.dismiss) var dismiss
+    @State private var currentMonth: Date = Date()
+    
+    private let calendar = Calendar.current
+    private let daysOfWeek = ["S", "M", "T", "W", "T", "F", "S"]
+    
+    var body: some View {
+        VStack(spacing: AppSpacing.large) {
+            // Header
+            HStack {
+                Button(action: { changeMonth(by: -1) }) {
+                    Image(systemName: "chevron.left")
+                        .foregroundColor(AppColor.textPrimary)
+                }
+                Spacer()
+                Text(monthYearString)
+                    .font(AppFont.headline())
+                    .foregroundColor(AppColor.textPrimary)
+                Spacer()
+                Button(action: { changeMonth(by: 1) }) {
+                    Image(systemName: "chevron.right")
+                        .foregroundColor(AppColor.textPrimary)
+                }
+            }
+            .padding(.horizontal)
+            
+            // Days Grid
+            VStack(spacing: AppSpacing.small) {
+                // Weekday Headers
+                HStack {
+                    ForEach(daysOfWeek, id: \.self) { day in
+                        Text(day)
+                            .font(AppFont.caption())
+                            .foregroundColor(AppColor.textSecondary)
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+                
+                // Days
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 10) {
+                    ForEach(daysInMonth, id: \.self) { date in
+                        if let date = date {
+                            DayCell(date: date, selectedDate: selectedDate) {
+                                selectedDate = date
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                                    dismiss()
+                                }
+                            }
+                        } else {
+                            Color.clear.frame(height: 40)
+                        }
+                    }
+                }
+            }
+        }
+        .padding()
+        .background(Color.white) // Opaque background
+    }
+    
+    private var monthYearString: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM yyyy"
+        return formatter.string(from: currentMonth)
+    }
+    
+    private var daysInMonth: [Date?] {
+        guard let monthInterval = calendar.dateInterval(of: .month, for: currentMonth),
+              let monthFirstWeek = calendar.dateInterval(of: .weekOfMonth, for: monthInterval.start),
+              let monthLastWeek = calendar.dateInterval(of: .weekOfMonth, for: monthInterval.end - 1)
+        else { return [] }
+        
+        let dateInterval = DateInterval(start: monthFirstWeek.start, end: monthLastWeek.end)
+        
+        var days: [Date?] = []
+        calendar.enumerateDates(startingAfter: dateInterval.start - 1, matching: DateComponents(hour: 0, minute: 0, second: 0), matchingPolicy: .nextTime) { date, _, stop in
+            guard let date = date else { return }
+            if date < dateInterval.end {
+                if calendar.isDate(date, equalTo: currentMonth, toGranularity: .month) {
+                    days.append(date)
+                } else {
+                    days.append(nil) // Padding for start/end of grid if needed, or just skip
+                }
+            } else {
+                stop = true
+            }
+        }
+        
+        // Better approach for grid alignment:
+        let startOfMonth = currentMonth.startOfMonth
+        let firstWeekday = calendar.component(.weekday, from: startOfMonth)
+        let offsetDays = firstWeekday - 1
+        
+        var gridDays: [Date?] = Array(repeating: nil, count: offsetDays)
+        
+        if let range = calendar.range(of: .day, in: .month, for: currentMonth) {
+            for day in range {
+                if let date = calendar.date(byAdding: .day, value: day - 1, to: startOfMonth) {
+                    gridDays.append(date)
+                }
+            }
+        }
+        
+        return gridDays
+    }
+    
+    private func changeMonth(by value: Int) {
+        if let newMonth = calendar.date(byAdding: .month, value: value, to: currentMonth) {
+            currentMonth = newMonth
+        }
+    }
+}
+
+private struct DayCell: View {
+    let date: Date
+    let selectedDate: Date
+    let action: () -> Void
+    
+    private var isSelected: Bool {
+        Calendar.current.isDate(date, inSameDayAs: selectedDate)
+    }
+    
+    private var isInRange: Bool {
+        let calendar = Calendar.current
+        let rangeEnd = calendar.date(byAdding: .day, value: 6, to: selectedDate) ?? selectedDate
+        return date >= selectedDate && date <= rangeEnd
+    }
+    
+    var body: some View {
+        Button(action: action) {
+            Text("\(Calendar.current.component(.day, from: date))")
+                .font(AppFont.body())
+                .foregroundColor(isSelected ? .white : (isInRange ? AppColor.primaryStrong : AppColor.textPrimary))
+                .frame(width: 36, height: 36)
+                .background(
+                    ZStack {
+                        if isSelected {
+                            Circle().fill(AppColor.primaryStrong)
+                        } else if isInRange {
+                            Circle().fill(AppColor.primary.opacity(0.3))
+                        }
+                    }
+                )
+        }
+    }
+}
+
 private struct TaskDurationBadge: View {
     let text: String
 
@@ -436,15 +615,26 @@ private struct DayDistribution: Identifiable {
     let totalHours: Double
     let fullDate: String
 
-    static let sample: [DayDistribution] = [
-        .init(day: "Mon", totalHours: 3.5, fullDate: "Monday, Aug 14"),
-        .init(day: "Tue", totalHours: 4.0, fullDate: "Tuesday, Aug 15"),
-        .init(day: "Wed", totalHours: 2.0, fullDate: "Wednesday, Aug 16"),
-        .init(day: "Thu", totalHours: 5.5, fullDate: "Thursday, Aug 17"),
-        .init(day: "Fri", totalHours: 3.0, fullDate: "Friday, Aug 18"),
-        .init(day: "Sat", totalHours: 4.5, fullDate: "Saturday, Aug 19"),
-        .init(day: "Sun", totalHours: 2.5, fullDate: "Sunday, Aug 20")
-    ]
+    static func generate(startOfWeek: Date) -> [DayDistribution] {
+        let calendar = Calendar.current
+        let baseHours = [3.5, 4.0, 2.0, 5.5, 3.0, 4.5, 2.5]
+        
+        return (0..<7).map { i in
+            let date = calendar.date(byAdding: .day, value: i, to: startOfWeek) ?? startOfWeek
+            let dayFormatter = DateFormatter()
+            dayFormatter.dateFormat = "E" // "Mon", "Tue"
+            let fullDateFormatter = DateFormatter()
+            fullDateFormatter.dateFormat = "EEEE, MMM d"
+            
+            return DayDistribution(
+                day: dayFormatter.string(from: date),
+                totalHours: baseHours[i % 7], // Cycle through sample data
+                fullDate: fullDateFormatter.string(from: date)
+            )
+        }
+    }
+    
+    static let sample = generate(startOfWeek: Date().startOfWeek)
 }
 
 private struct DailyTask: Identifiable {
@@ -452,6 +642,11 @@ private struct DailyTask: Identifiable {
     let day: String
     let title: String
     let duration: String
+
+    static func generate(startOfWeek: Date) -> [DailyTask] {
+        // Return static sample data for now, but could be dynamic
+        return sample
+    }
 
     static let sample: [DailyTask] = [
         .init(day: "Mon", title: "Project Planning", duration: "1h 20m"),
@@ -465,4 +660,23 @@ private struct DailyTask: Identifiable {
         .init(day: "Sat", title: "Family Time", duration: "2h 00m"),
         .init(day: "Sun", title: "Reading", duration: "1h 15m")
     ]
+}
+
+extension Date {
+    var startOfWeek: Date {
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: self)
+        return calendar.date(from: components) ?? self
+    }
+    
+    var startOfMonth: Date {
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.year, .month], from: self)
+        return calendar.date(from: components) ?? self
+    }
+    
+    var endOfMonth: Date {
+        let calendar = Calendar.current
+        return calendar.date(byAdding: DateComponents(month: 1, day: -1), to: self.startOfMonth) ?? self
+    }
 }
