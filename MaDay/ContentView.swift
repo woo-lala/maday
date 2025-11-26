@@ -17,11 +17,13 @@ struct ContentView: View {
                 case .home:
                     RecordView(showsTabBar: false, onSelectTab: { selectedTab = $0 })
                 case .report:
-                    ReportView()
-                case .activity:
-                    RecordView(showsTabBar: false, onSelectTab: { selectedTab = $0 })
+                    NavigationStack {
+                        ReportView()
+                    }
                 case .settings:
-                    SettingsPlaceholderView()
+                    NavigationStack {
+                        SettingsView()
+                    }
                 }
             }
             .padding(.bottom, AppSpacing.mediumPlus + AppMetrics.buttonHeight) // space for tab bar
@@ -33,18 +35,7 @@ struct ContentView: View {
     }
 }
 
-private struct SettingsPlaceholderView: View {
-    var body: some View {
-        VStack {
-            Text("Settings")
-                .font(AppFont.title())
-                .foregroundColor(AppColor.textPrimary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .padding(.horizontal, AppSpacing.mediumPlus)
-        .padding(.top, AppSpacing.large)
-    }
-}
+
 
 #Preview {
     ContentView()

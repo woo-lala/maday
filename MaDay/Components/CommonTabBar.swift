@@ -1,13 +1,12 @@
 import SwiftUI
 
 enum TabItem: String, CaseIterable {
-    case home, report, activity, settings
+    case home, report, settings
 
     var label: String {
         switch self {
         case .home: return "Record"
         case .report: return "Report"
-        case .activity: return "Activity"
         case .settings: return "Settings"
         }
     }
@@ -15,9 +14,8 @@ enum TabItem: String, CaseIterable {
     var icon: String {
         switch self {
         case .home: return "house.fill"
-        case .report: return "chart.bar.xaxis"
-        case .activity: return "figure.walk"
-        case .settings: return "gearshape"
+        case .report: return "doc.text.fill"
+        case .settings: return "gearshape.fill"
         }
     }
 }
