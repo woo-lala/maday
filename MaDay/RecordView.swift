@@ -7,6 +7,7 @@ struct RecordView: View {
     var onSelectTab: ((TabItem) -> Void)? = nil
 
     @State private var tasks: [TaskItem]
+    @State private var taskLibrary: [TaskItem]
     @State private var selectedTaskID: UUID?
     @State private var activeTaskID: UUID?
     @State private var isTimerRunning = false
@@ -29,6 +30,7 @@ struct RecordView: View {
             TaskItem(title: "Review YouTube Analytics", tag: .work, detail: "Check watch time and retention charts", categoryTitle: "Work", categoryColor: TaskItem.Tag.work.color)
         ]
         _tasks = State(initialValue: initialTasks)
+        _taskLibrary = State(initialValue: initialTasks)
         _selectedTaskID = State(initialValue: initialTasks.first?.id)
     }
 
@@ -126,7 +128,7 @@ struct RecordView: View {
     }
 
     private var addTaskDestination: some View {
-        AddTaskView(tasks: $tasks) { newTask in
+        AddTaskView(tasks: $tasks, taskLibrary: $taskLibrary) { newTask in
             selectedTaskID = newTask.id
             activeTaskID = nil
             sessionElapsed = 0
@@ -138,9 +140,15 @@ struct RecordView: View {
     }
 
     private var timerSection: some View {
-        TimerSectionView(
+        let activeTask = tasks.first { $0.id == activeTaskID }
+        let selectedTask = tasks.first { $0.id == selectedTaskID }
+        let targetTask = activeTask ?? selectedTask
+        
+        return TimerSectionView(
             currentTime: sessionElapsed,
-            totalTime: totalTrackedTime
+            totalTime: totalTrackedTime,
+            goalTime: targetTask?.goalTime,
+            trackedTime: targetTask?.trackedTime ?? 0
         )
         .sectionCardStyle()
     }
@@ -338,12 +346,23 @@ private struct TaskCardView: View {
 private struct TimerSectionView: View {
     let currentTime: TimeInterval
     let totalTime: TimeInterval
+    var goalTime: TimeInterval? = nil
+    var trackedTime: TimeInterval = 0
 
     var body: some View {
         VStack(spacing: AppSpacing.small) {
-            Text(formattedTime(currentTime))
-                .font(AppFont.timerDisplay())
-                .foregroundColor(AppColor.textPrimary)
+            if let goal = goalTime {
+                // Timer Mode: Show remaining time
+                let remaining = goal - trackedTime
+                Text(formattedTime(remaining))
+                    .font(AppFont.timerDisplay())
+                    .foregroundColor(remaining < 0 ? AppColor.destructive : AppColor.textPrimary)
+            } else {
+                // Stopwatch Mode: Show current session time
+                Text(formattedTime(currentTime))
+                    .font(AppFont.timerDisplay())
+                    .foregroundColor(AppColor.textPrimary)
+            }
 
             Text("Total Time Today: \(formattedTotal(totalTime))")
                 .font(AppFont.body())
@@ -354,11 +373,12 @@ private struct TimerSectionView: View {
     }
 
     private func formattedTime(_ time: TimeInterval) -> String {
-        let totalSeconds = Int(time)
+        let totalSeconds = Int(abs(time))
         let hours = totalSeconds / 3600
         let minutes = (totalSeconds % 3600) / 60
         let seconds = totalSeconds % 60
-        return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
+        let sign = time < 0 ? "-" : ""
+        return String(format: "%@%02d:%02d:%02d", sign, hours, minutes, seconds)
     }
 
     private func formattedTotal(_ time: TimeInterval) -> String {
@@ -477,6 +497,7 @@ struct TaskItem: Identifiable {
     var isCompleted: Bool = false
     var categoryTitle: String? = nil
     var categoryColor: Color? = nil
+    var goalTime: TimeInterval? = nil
 }
 
 private struct TagBadge: View {

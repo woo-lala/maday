@@ -16,6 +16,10 @@ struct NewTaskView: View {
     @State private var newCategoryColorId: String = "work"
     @State private var showAddCategoryForm = false
 
+    @State private var goalHours: Int = 0
+    @State private var goalMinutes: Int = 0
+    @State private var showGoalTimePicker = false
+
     private var trimmedTaskName: String {
         newTaskName.trimmingCharacters(in: .whitespacesAndNewlines)
     }
@@ -224,7 +228,73 @@ struct NewTaskView: View {
                         )
                 )
             }
+            
+            VStack(alignment: .leading, spacing: AppSpacing.small) {
+                Text("Goal Time (Optional)")
+                    .font(AppFont.callout())
+                    .foregroundColor(AppColor.textSecondary)
+
+                VStack(spacing: 0) {
+                    HStack {
+                        Text(goalTimeText)
+                            .font(AppFont.body())
+                            .foregroundColor(goalHours == 0 && goalMinutes == 0 ? AppColor.textSecondary : AppColor.textPrimary)
+                        
+                        Spacer()
+                        
+                        Image(systemName: showGoalTimePicker ? "chevron.up" : "chevron.down")
+                            .font(AppFont.caption())
+                            .foregroundColor(AppColor.textSecondary)
+                    }
+                    .padding(.horizontal, AppSpacing.medium)
+                    .padding(.vertical, AppSpacing.smallPlus)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                            showGoalTimePicker.toggle()
+                        }
+                    }
+                    
+                    if showGoalTimePicker {
+                        Divider()
+                            .padding(.horizontal, AppSpacing.medium)
+                        
+                        HStack {
+                            Picker("Hours", selection: $goalHours) {
+                                ForEach(0..<24) { hour in
+                                    Text("\(hour) h").tag(hour)
+                                }
+                            }
+                            .pickerStyle(.wheel)
+                            .frame(height: 120)
+                            
+                            Picker("Minutes", selection: $goalMinutes) {
+                                ForEach(0..<60) { minute in
+                                    Text("\(minute) m").tag(minute)
+                                }
+                            }
+                            .pickerStyle(.wheel)
+                            .frame(height: 120)
+                        }
+                    }
+                }
+                .background(
+                    RoundedRectangle(cornerRadius: AppRadius.standard, style: .continuous)
+                        .stroke(AppColor.border, lineWidth: 1)
+                        .background(
+                            RoundedRectangle(cornerRadius: AppRadius.standard, style: .continuous)
+                                .fill(AppColor.surface)
+                        )
+                )
+            }
         }
+    }
+    
+    private var goalTimeText: String {
+        if goalHours == 0 && goalMinutes == 0 {
+            return "No Goal (Stopwatch Mode)"
+        }
+        return "\(goalHours)h \(goalMinutes)m"
     }
 
     private var saveButtonBar: some View {
@@ -251,13 +321,21 @@ struct NewTaskView: View {
         guard let selectedCategory else { return }
 
         let details = newTaskDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        var goalTime: TimeInterval? = nil
+        if goalHours > 0 || goalMinutes > 0 {
+            goalTime = TimeInterval(goalHours * 3600 + goalMinutes * 60)
+        }
+        
         let newTask = TaskItem(
             title: title,
             tag: selectedCategory.tag,
             trackedTime: 0,
             detail: details,
+            isCompleted: false,
             categoryTitle: selectedCategory.name,
-            categoryColor: selectedCategory.color
+            categoryColor: selectedCategory.color,
+            goalTime: goalTime
         )
         tasks.append(newTask)
         onTaskCreated?(newTask)

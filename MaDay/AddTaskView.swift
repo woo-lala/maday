@@ -4,6 +4,7 @@ struct AddTaskView: View {
     @Environment(\.dismiss) private var dismiss
 
     @Binding var tasks: [TaskItem]
+    @Binding var taskLibrary: [TaskItem]
     var onTaskCreated: ((TaskItem) -> Void)? = nil
 
     @State private var filterExpanded = false
@@ -139,7 +140,10 @@ struct AddTaskView: View {
             }
 
             NavigationLink {
-                NewTaskView(tasks: $tasks, onTaskCreated: onTaskCreated)
+                NewTaskView(tasks: $taskLibrary, onTaskCreated: { newTask in
+                    // When a new task is created in library, select it in AddTaskView so user can add it
+                    selectedTaskID = newTask.id
+                })
             } label: {
                 Text("Or create a new task")
                     .font(AppFont.caption())
@@ -180,7 +184,7 @@ struct AddTaskView: View {
     }
 
     private func filteredTasks(for category: TaskCategory) -> [TaskItem] {
-        tasks.filter { category.matches(tag: $0.tag) }
+        taskLibrary.filter { category.matches(tag: $0.tag) }
     }
 
     private func toggleSelection(for id: UUID) {
@@ -193,7 +197,7 @@ struct AddTaskView: View {
 
     private func addSelectedTask() {
         guard let selectedID = selectedTaskID,
-              let template = tasks.first(where: { $0.id == selectedID }) else {
+              let template = taskLibrary.first(where: { $0.id == selectedID }) else {
             return
         }
 
@@ -201,7 +205,11 @@ struct AddTaskView: View {
             title: template.title,
             tag: template.tag,
             trackedTime: 0,
-            detail: template.detail
+            detail: template.detail,
+            isCompleted: false,
+            categoryTitle: template.categoryTitle,
+            categoryColor: template.categoryColor,
+            goalTime: template.goalTime
         )
         tasks.append(newTask)
         onTaskCreated?(newTask)
@@ -314,9 +322,22 @@ private struct ExistingTaskCard: View {
                 .shadow(color: indicatorColor.opacity(0.25), radius: 2, x: 0, y: 1)
 
             VStack(alignment: .leading, spacing: AppSpacing.xSmall) {
-                Text(task.title)
-                    .font(AppFont.heading())
-                    .foregroundColor(AppColor.textPrimary)
+                HStack(alignment: .firstTextBaseline) {
+                    Text(task.title)
+                        .font(AppFont.heading())
+                        .foregroundColor(AppColor.textPrimary)
+                        .lineLimit(1)
+                    
+                    Spacer()
+                    
+                    if let goal = task.goalTime {
+                        Text("Goal: \(formattedGoalTime(goal))")
+                            .font(AppFont.caption())
+                            .foregroundColor(AppColor.primary)
+                            .fontWeight(.medium)
+                            .fixedSize(horizontal: true, vertical: false)
+                    }
+                }
 
                 if !task.detail.isEmpty {
                     Text(task.detail)
@@ -340,11 +361,28 @@ private struct ExistingTaskCard: View {
         )
         .shadow(color: AppShadow.card, radius: AppShadow.radius, x: AppShadow.x, y: AppShadow.y)
     }
+    
+    private func formattedGoalTime(_ time: TimeInterval) -> String {
+        let totalMinutes = Int(time) / 60
+        let hours = totalMinutes / 60
+        let minutes = totalMinutes % 60
+        if hours > 0 && minutes > 0 {
+            return "\(hours)h \(minutes)m"
+        } else if hours > 0 {
+            return "\(hours)h"
+        } else {
+            return "\(minutes)m"
+        }
+    }
 }
 
 #Preview {
     AddTaskView(tasks: .constant([
         TaskItem(title: "Work on Project Dayflow", tag: .work, detail: "Finalize sprint backlog"),
         TaskItem(title: "Call with Mom", tag: .personal, detail: "Weekly check-in")
+    ]), taskLibrary: .constant([
+        TaskItem(title: "Work on Project Dayflow", tag: .work, detail: "Finalize sprint backlog"),
+        TaskItem(title: "Call with Mom", tag: .personal, detail: "Weekly check-in"),
+        TaskItem(title: "Library Task", tag: .fitness, detail: "Extra task")
     ]))
 }
