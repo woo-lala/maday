@@ -1,0 +1,130 @@
+/* Settings - Header */
+"settings.title" = "설정";
+"settings.subtitle" = "계정, 개인정보 및 동기화 옵션을 관리하세요.";
+
+/* Settings - Account & Security */
+"settings.account.title" = "계정 및 보안";
+"settings.account.apple_signin" = "Apple 로그인";
+"settings.account.apple_signin.desc" = "안전한 로그인을 위해 Apple ID를 연결하세요.";
+"settings.account.connect" = "연결";
+"settings.account.delete" = "계정 삭제";
+"settings.account.delete.desc" = "계정과 데이터를 영구적으로 삭제합니다.";
+
+/* Settings - Privacy & Data */
+"settings.privacy.title" = "개인정보 및 데이터";
+"settings.privacy.policy" = "개인정보 처리방침";
+"settings.privacy.policy.desc" = "데이터가 어떻게 처리되는지 확인하세요.";
+"settings.privacy.usage" = "데이터 사용 및 동의";
+"settings.privacy.usage.desc" = "데이터 공유 설정을 관리하세요.";
+"settings.privacy.backup" = "데이터 백업 및 복원";
+"settings.privacy.backup.desc" = "클라우드 백업을 관리하세요.";
+
+/* Settings - Sync & Devices */
+"settings.sync.title" = "동기화 및 기기";
+"settings.sync.watch" = "Apple Watch 연결";
+"settings.sync.connected" = "연결됨";
+"settings.sync.disconnected" = "연결 끊김";
+"settings.sync.now" = "지금 동기화";
+"settings.sync.now.desc" = "모든 기기의 데이터를 업데이트합니다.";
+"settings.sync.button" = "동기화";
+
+/* Settings - Notifications */
+"settings.noti.title" = "알림";
+"settings.noti.daily" = "일일 리마인더";
+"settings.noti.daily.desc" = "매일 알림을 받습니다.";
+"settings.noti.weekly" = "주간 리포트 알림";
+"settings.noti.weekly.desc" = "활동 요약을 받습니다.";
+
+/* Settings - Support */
+"settings.support.title" = "지원 및 앱 정보";
+"settings.support.contact" = "고객 지원 문의";
+"settings.support.version" = "앱 버전";
+
+/* Delete Account View */
+"delete_account.title" = "계정 삭제";
+"delete_account.warning" = "계정을 삭제하면 되돌릴 수 없습니다. 신중하게 결정해주세요.";
+"delete_account.consequences.title" = "삭제되는 항목:";
+"delete_account.item.tasks" = "모든 태스크 및 기록된 시간";
+"delete_account.item.reports" = "주간 리포트 및 분석 데이터";
+"delete_account.item.sync" = "모든 기기의 동기화된 데이터";
+"delete_account.item.settings" = "계정 설정 및 환경설정";
+"delete_account.item.apple_id" = "Apple ID 연결 정보";
+"delete_account.confirm.title" = "확인을 위해 DELETE를 입력하세요";
+"delete_account.button" = "내 계정 삭제";
+"delete_account.alert.title" = "계정을 삭제하시겠습니까?";
+"delete_account.alert.message" = "이 작업은 되돌릴 수 없습니다. 모든 데이터가 영구적으로 삭제됩니다.";
+"delete_account.alert.cancel" = "취소";
+"delete_account.alert.delete" = "삭제";
+
+/* Data Consent View */
+"consent.title" = "데이터 사용 및 동의";
+"consent.header.title" = "회원님의 개인정보는 소중합니다";
+"consent.header.desc" = "공유할 데이터를 직접 선택하세요. 설정은 언제든지 변경할 수 있습니다.";
+"consent.analytics" = "분석 데이터";
+"consent.analytics.desc" = "익명 사용 데이터를 공유하여 앱 개선을 도와주세요.";
+"consent.crash" = "크래시 리포트";
+"consent.crash.desc" = "버그 수정을 위해 크래시 리포트를 자동으로 전송합니다.";
+"consent.personalization" = "개인화";
+"consent.personalization.desc" = "사용 패턴에 기반한 맞춤형 경험을 제공합니다.";
+"consent.third_party" = "타사 서비스";
+"consent.third_party.desc" = "향상된 기능을 위해 타사 서비스와 데이터를 공유합니다.";
+"consent.recommended" = "권장";
+"consent.collect.title" = "수집 항목";
+"consent.collect.encrypted" = "항상 암호화됨";
+"consent.collect.encrypted.desc" = "태스크 데이터는 종단간 암호화됩니다";
+"consent.collect.sold" = "판매하지 않음";
+"consent.collect.sold.desc" = "개인정보를 절대 판매하지 않습니다";
+"consent.collect.anonymous" = "익명 분석";
+"consent.collect.anonymous.desc" = "사용 데이터는 익명화되어 집계됩니다";
+"consent.policy.button" = "개인정보 처리방침 전문 보기";
+
+/* Backup & Restore View */
+"backup.title" = "백업 및 복원";
+"backup.alert.title" = "백업을 복원하시겠습니까?";
+"backup.alert.message" = "현재 데이터가 백업 데이터로 대체됩니다. 현재 데이터는 손실됩니다.";
+"backup.status.last" = "마지막 백업";
+"backup.auto.title" = "자동 백업";
+"backup.auto.enable" = "자동 백업 활성화";
+"backup.auto.desc" = "매일 iCloud에 데이터를 자동으로 백업합니다";
+"backup.manual.title" = "수동 작업";
+"backup.manual.backup" = "지금 백업";
+"backup.manual.restore" = "복원";
+"backup.manual.from" = "백업에서 복원";
+"backup.available.title" = "사용 가능한 백업";
+"backup.latest" = "최신";
+
+/* Contact Support View */
+"support.title" = "고객 지원 문의";
+"support.alert.sent" = "메시지 전송 완료!";
+"support.alert.message" = "최대한 빠른 시일 내에 답변 드리겠습니다.";
+"support.header.title" = "무엇을 도와드릴까요?";
+"support.header.desc" = "MaDay를 더 잘 활용하실 수 있도록 도와드리겠습니다.";
+"support.quick.title" = "빠른 도움말";
+"support.quick.center" = "도움말 센터";
+"support.quick.center.desc" = "자주 묻는 질문과 가이드를 확인하세요";
+"support.quick.bug" = "버그 신고";
+"support.quick.bug.desc" = "앱이 제대로 작동하지 않는다면 알려주세요";
+"support.quick.feature" = "기능 제안";
+"support.quick.feature.desc" = "새로운 기능이나 개선사항을 제안해주세요";
+"support.form.title" = "메시지 보내기";
+"support.form.category" = "카테고리";
+"support.form.subject" = "제목";
+"support.form.subject.placeholder" = "문제에 대한 간단한 설명";
+"support.form.message" = "내용";
+"support.form.message.placeholder" = "문제나 질문을 자세히 적어주세요...";
+"support.form.device_info" = "기기 정보 포함";
+"support.form.device_info.desc" = "기술적인 문제 해결에 도움이 됩니다";
+"support.form.send" = "메시지 보내기";
+
+/* Support Categories */
+"support.cat.general" = "일반 문의";
+"support.cat.technical" = "기술적 문제";
+"support.cat.bug" = "버그 신고";
+"support.cat.feature" = "기능 제안";
+"support.cat.account" = "계정 및 결제";
+"support.cat.privacy" = "개인정보 및 데이터";
+
+/* Tab Bar */
+"tab.record" = "기록";
+"tab.report" = "리포트";
+"tab.settings" = "설정";

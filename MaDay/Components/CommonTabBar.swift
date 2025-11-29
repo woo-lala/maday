@@ -3,11 +3,11 @@ import SwiftUI
 enum TabItem: String, CaseIterable {
     case home, report, settings
 
-    var label: String {
+    var label: LocalizedStringKey {
         switch self {
-        case .home: return "Record"
-        case .report: return "Report"
-        case .settings: return "Settings"
+        case .home: return "tab.record"
+        case .report: return "tab.report"
+        case .settings: return "tab.settings"
         }
     }
 

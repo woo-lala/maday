@@ -1,0 +1,130 @@
+/* Settings - Header */
+"settings.title" = "Settings";
+"settings.subtitle" = "Manage your account, privacy, and sync options.";
+
+/* Settings - Account & Security */
+"settings.account.title" = "Account & Security";
+"settings.account.apple_signin" = "Apple Sign-In";
+"settings.account.apple_signin.desc" = "Connect your Apple ID for secure login.";
+"settings.account.connect" = "Connect";
+"settings.account.delete" = "Delete Account";
+"settings.account.delete.desc" = "Permanently remove your account and data.";
+
+/* Settings - Privacy & Data */
+"settings.privacy.title" = "Privacy & Data";
+"settings.privacy.policy" = "Privacy Policy";
+"settings.privacy.policy.desc" = "Understand how your data is handled.";
+"settings.privacy.usage" = "Data Usage & Consent";
+"settings.privacy.usage.desc" = "Review and manage data sharing preferences.";
+"settings.privacy.backup" = "Data Backup & Restore";
+"settings.privacy.backup.desc" = "Manage your cloud backups.";
+
+/* Settings - Sync & Devices */
+"settings.sync.title" = "Sync & Devices";
+"settings.sync.watch" = "Apple Watch Connection";
+"settings.sync.connected" = "Connected";
+"settings.sync.disconnected" = "Disconnected";
+"settings.sync.now" = "Sync Now";
+"settings.sync.now.desc" = "Update data across all your devices.";
+"settings.sync.button" = "Sync";
+
+/* Settings - Notifications */
+"settings.noti.title" = "Notifications";
+"settings.noti.daily" = "Daily Reminder";
+"settings.noti.daily.desc" = "Receive a daily notification.";
+"settings.noti.weekly" = "Weekly Report Notification";
+"settings.noti.weekly.desc" = "Get a summary of your activity.";
+
+/* Settings - Support */
+"settings.support.title" = "Support & App Info";
+"settings.support.contact" = "Contact Support";
+"settings.support.version" = "App Version";
+
+/* Delete Account View */
+"delete_account.title" = "Delete Account";
+"delete_account.warning" = "Once you delete your account, there is no going back. Please be certain.";
+"delete_account.consequences.title" = "What will be deleted:";
+"delete_account.item.tasks" = "All your tasks and tracked time";
+"delete_account.item.reports" = "Your weekly reports and analytics";
+"delete_account.item.sync" = "All synced data across devices";
+"delete_account.item.settings" = "Your account settings and preferences";
+"delete_account.item.apple_id" = "Access to your Apple ID connection";
+"delete_account.confirm.title" = "Type DELETE to confirm";
+"delete_account.button" = "Delete My Account";
+"delete_account.alert.title" = "Delete Account?";
+"delete_account.alert.message" = "This action cannot be undone. All your data will be permanently deleted.";
+"delete_account.alert.cancel" = "Cancel";
+"delete_account.alert.delete" = "Delete";
+
+/* Data Consent View */
+"consent.title" = "Data Usage & Consent";
+"consent.header.title" = "Your Privacy Matters";
+"consent.header.desc" = "Control what data you share with us. You can change these settings anytime.";
+"consent.analytics" = "Analytics";
+"consent.analytics.desc" = "Help us improve the app by sharing anonymous usage data.";
+"consent.crash" = "Crash Reports";
+"consent.crash.desc" = "Automatically send crash reports to help us fix bugs.";
+"consent.personalization" = "Personalization";
+"consent.personalization.desc" = "Allow us to personalize your experience based on usage patterns.";
+"consent.third_party" = "Third-Party Services";
+"consent.third_party.desc" = "Share data with third-party services for enhanced features.";
+"consent.recommended" = "Recommended";
+"consent.collect.title" = "What we collect";
+"consent.collect.encrypted" = "Always Encrypted";
+"consent.collect.encrypted.desc" = "Your task data is end-to-end encrypted";
+"consent.collect.sold" = "Never Sold";
+"consent.collect.sold.desc" = "We never sell your personal information";
+"consent.collect.anonymous" = "Anonymous Analytics";
+"consent.collect.anonymous.desc" = "Usage data is anonymized and aggregated";
+"consent.policy.button" = "Read Full Privacy Policy";
+
+/* Backup & Restore View */
+"backup.title" = "Backup & Restore";
+"backup.alert.title" = "Restore Backup?";
+"backup.alert.message" = "This will replace your current data with the backup. Current data will be lost.";
+"backup.status.last" = "Last backup";
+"backup.auto.title" = "Automatic Backup";
+"backup.auto.enable" = "Enable Auto Backup";
+"backup.auto.desc" = "Automatically backup your data to iCloud daily";
+"backup.manual.title" = "Manual Actions";
+"backup.manual.backup" = "Backup Now";
+"backup.manual.restore" = "Restore";
+"backup.manual.from" = "From backup";
+"backup.available.title" = "Available Backups";
+"backup.latest" = "Latest";
+
+/* Contact Support View */
+"support.title" = "Contact Support";
+"support.alert.sent" = "Message Sent!";
+"support.alert.message" = "We'll get back to you as soon as possible.";
+"support.header.title" = "How can we help?";
+"support.header.desc" = "We're here to help you get the most out of MaDay.";
+"support.quick.title" = "Quick Help";
+"support.quick.center" = "Help Center";
+"support.quick.center.desc" = "Browse common questions and guides";
+"support.quick.bug" = "Report a Bug";
+"support.quick.bug.desc" = "Let us know if something isn't working";
+"support.quick.feature" = "Feature Request";
+"support.quick.feature.desc" = "Suggest new features and improvements";
+"support.form.title" = "Send us a message";
+"support.form.category" = "Category";
+"support.form.subject" = "Subject";
+"support.form.subject.placeholder" = "Brief description of your issue";
+"support.form.message" = "Message";
+"support.form.message.placeholder" = "Describe your issue or question in detail...";
+"support.form.device_info" = "Include device information";
+"support.form.device_info.desc" = "Helps us diagnose technical issues";
+"support.form.send" = "Send Message";
+
+/* Support Categories */
+"support.cat.general" = "General Question";
+"support.cat.technical" = "Technical Issue";
+"support.cat.bug" = "Bug Report";
+"support.cat.feature" = "Feature Request";
+"support.cat.account" = "Account & Billing";
+"support.cat.privacy" = "Privacy & Data";
+
+/* Tab Bar */
+"tab.record" = "Record";
+"tab.report" = "Report";
+"tab.settings" = "Settings";
