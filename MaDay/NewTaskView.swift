@@ -5,9 +5,10 @@ struct NewTaskView: View {
 
     @Binding var tasks: [TaskItem]
     var onTaskCreated: ((TaskItem) -> Void)? = nil
-
-    @State private var newTaskName = ""
-    @State private var newTaskDescription = ""
+    var taskToEdit: TaskItem? = nil
+    
+    @State private var newTaskName: String
+    @State private var newTaskDescription: String
     @State private var categoryOptions: [CategoryOption] = CategoryOption.defaults
     @State private var selectedCategoryId: UUID?
     @State private var categoryPickerExpanded = false
@@ -19,6 +20,30 @@ struct NewTaskView: View {
     @State private var goalHours: Int = 0
     @State private var goalMinutes: Int = 0
     @State private var showGoalTimePicker = false
+
+    init(tasks: Binding<[TaskItem]>, onTaskCreated: ((TaskItem) -> Void)? = nil, taskToEdit: TaskItem? = nil) {
+        self._tasks = tasks
+        self.onTaskCreated = onTaskCreated
+        self.taskToEdit = taskToEdit
+
+        _newTaskName = State(initialValue: taskToEdit?.title ?? "")
+        _newTaskDescription = State(initialValue: taskToEdit?.detail ?? "")
+        
+        // Determine initial category selection
+        let initialTag = taskToEdit?.tag ?? .work
+        let matchingCategory = CategoryOption.defaults.first { $0.tag == initialTag }
+        _selectedCategoryId = State(initialValue: matchingCategory?.id ?? CategoryOption.defaults.first?.id)
+        
+        // Determine initial goal time
+        if let goal = taskToEdit?.goalTime {
+            let totalMinutes = Int(goal) / 60
+            _goalHours = State(initialValue: totalMinutes / 60)
+            _goalMinutes = State(initialValue: totalMinutes % 60)
+        } else {
+            _goalHours = State(initialValue: 0)
+            _goalMinutes = State(initialValue: 0)
+        }
+    }
 
     private var trimmedTaskName: String {
         newTaskName.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -47,12 +72,14 @@ struct NewTaskView: View {
                 .padding(.bottom, AppSpacing.xLarge)
             }
         }
-        .navigationTitle("New Task")
+        .navigationTitle(taskToEdit == nil ? "New Task" : "Edit Task")
         .navigationBarTitleDisplayMode(.inline)
         .safeAreaInset(edge: .bottom) {
             saveButtonBar
         }
     }
+    
+    // ... (formSection stays same)
 
     private var formSection: some View {
         VStack(alignment: .leading, spacing: AppSpacing.medium) {
@@ -117,7 +144,7 @@ struct NewTaskView: View {
                                     if selectedCategoryId == category.id {
                                         Image(systemName: "checkmark")
                                             .foregroundColor(AppColor.primary)
-                                            .font(AppFont.caption())
+                                        .font(AppFont.caption())
                                     }
                                 }
                                 .padding(.horizontal, AppSpacing.small)
@@ -289,7 +316,7 @@ struct NewTaskView: View {
             }
         }
     }
-    
+
     private var goalTimeText: String {
         if goalHours == 0 && goalMinutes == 0 {
             return "No Goal (Stopwatch Mode)"
@@ -327,21 +354,38 @@ struct NewTaskView: View {
             goalTime = TimeInterval(goalHours * 3600 + goalMinutes * 60)
         }
         
-        let newTask = TaskItem(
-            title: title,
-            tag: selectedCategory.tag,
-            trackedTime: 0,
-            detail: details,
-            isCompleted: false,
-            categoryTitle: selectedCategory.name,
-            categoryColor: selectedCategory.color,
-            goalTime: goalTime
-        )
-        tasks.append(newTask)
-        onTaskCreated?(newTask)
+        if let editingTask = taskToEdit, let index = tasks.firstIndex(where: { $0.id == editingTask.id }) {
+            // Update existing task
+            var updatedTask = tasks[index]
+            updatedTask.title = title
+            updatedTask.detail = details
+            updatedTask.tag = selectedCategory.tag
+            updatedTask.categoryTitle = selectedCategory.name
+            updatedTask.categoryColor = selectedCategory.color
+            updatedTask.goalTime = goalTime
+            
+            tasks[index] = updatedTask
+            onTaskCreated?(updatedTask)
+        } else {
+            // Create new task
+            let newTask = TaskItem(
+                title: title,
+                tag: selectedCategory.tag,
+                trackedTime: 0,
+                detail: details,
+                isCompleted: false,
+                categoryTitle: selectedCategory.name,
+                categoryColor: selectedCategory.color,
+                goalTime: goalTime
+            )
+            tasks.append(newTask)
+            onTaskCreated?(newTask)
+        }
 
         dismiss()
     }
+
+
 
 }
 

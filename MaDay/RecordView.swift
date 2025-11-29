@@ -14,6 +14,7 @@ struct RecordView: View {
     @State private var sessionElapsed: TimeInterval = 0
     @State private var lastTickDate: Date?
     @State private var showAddTask = false
+    @State private var editingTask: TaskItem?
     @State private var draggingTask: TaskItem?
     @State private var localTabSelection: TabItem = .home
 
@@ -23,15 +24,27 @@ struct RecordView: View {
         self.showsTabBar = showsTabBar
         self.onSelectTab = onSelectTab
 
-        let initialTasks: [TaskItem] = [
+        // Task library - these are templates
+        let libraryTasks: [TaskItem] = [
             TaskItem(title: "Work on Project Dayflow", tag: .work, detail: "Finalize sprint backlog and sync with design", categoryTitle: "Work", categoryColor: TaskItem.Tag.work.color),
             TaskItem(title: "Read Atomic Habits", tag: .personal, detail: "Read 20 pages before bed", categoryTitle: "Personal", categoryColor: TaskItem.Tag.personal.color),
-            TaskItem(title: "30 min HIIT Session", tag: .fitness, detail: "Power session from the Daily Burn plan", categoryTitle: "Fitness", categoryColor: TaskItem.Tag.fitness.color),
-            TaskItem(title: "Review YouTube Analytics", tag: .work, detail: "Check watch time and retention charts", categoryTitle: "Work", categoryColor: TaskItem.Tag.work.color)
+            TaskItem(title: "30 min HIIT Session", tag: .fitness, detail: "Power session from the Daily Burn plan", categoryTitle: "Fitness", categoryColor: TaskItem.Tag.fitness.color, goalTime: 1800),
+            TaskItem(title: "Review YouTube Analytics", tag: .work, detail: "Check watch time and retention charts", categoryTitle: "Work", categoryColor: TaskItem.Tag.work.color),
+            TaskItem(title: "Deep Work Session", tag: .work, detail: "Focus on coding", categoryTitle: "Work", categoryColor: TaskItem.Tag.work.color, goalTime: 5400),
+            TaskItem(title: "Quick Jog", tag: .fitness, detail: "Morning cardio", categoryTitle: "Fitness", categoryColor: TaskItem.Tag.fitness.color, goalTime: 1800),
+            TaskItem(title: "Meditation", tag: .personal, detail: "Clear mind", categoryTitle: "Personal", categoryColor: TaskItem.Tag.personal.color, goalTime: 300)
         ]
-        _tasks = State(initialValue: initialTasks)
-        _taskLibrary = State(initialValue: initialTasks)
-        _selectedTaskID = State(initialValue: initialTasks.first?.id)
+        
+        // Today's tasks - start with copies of some library tasks as examples
+        let todayTasks: [TaskItem] = [
+            libraryTasks[0].copy(),
+            libraryTasks[2].copy(),
+            libraryTasks[4].copy()
+        ]
+        
+        _taskLibrary = State(initialValue: libraryTasks)
+        _tasks = State(initialValue: todayTasks)
+        _selectedTaskID = State(initialValue: todayTasks.first?.id)
     }
 
     private var totalTrackedTime: TimeInterval {
@@ -64,6 +77,11 @@ struct RecordView: View {
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(isPresented: $showAddTask) {
                 addTaskDestination
+            }
+            .sheet(item: $editingTask) { task in
+                NavigationStack {
+                    NewTaskView(tasks: $tasks, taskToEdit: task)
+                }
             }
         }
         .onReceive(timer) { date in
@@ -117,6 +135,19 @@ struct RecordView: View {
                         )
                     }
                     .buttonStyle(.plain)
+                    .contextMenu {
+                        Button {
+                            editingTask = task
+                        } label: {
+                            Label("Edit", systemImage: "pencil")
+                        }
+                        
+                        Button(role: .destructive) {
+                            deleteTask(task)
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    }
                     .onDrag {
                         draggingTask = task
                         return NSItemProvider(object: task.id.uuidString as NSString)
@@ -252,6 +283,18 @@ struct RecordView: View {
     private func toggleCompletion(for id: UUID) {
         updateTask(with: id) { item in
             item.isCompleted.toggle()
+        }
+    }
+
+    private func deleteTask(_ task: TaskItem) {
+        if activeTaskID == task.id {
+            stopTimer()
+        }
+        if selectedTaskID == task.id {
+            selectedTaskID = nil
+        }
+        if let index = tasks.firstIndex(where: { $0.id == task.id }) {
+            tasks.remove(at: index)
         }
     }
 }
@@ -490,14 +533,28 @@ struct TaskItem: Identifiable {
     }
 
     let id = UUID()
-    let title: String
-    let tag: Tag
+    var title: String
+    var tag: Tag
     var trackedTime: TimeInterval = 0
     var detail: String = ""
     var isCompleted: Bool = false
     var categoryTitle: String? = nil
     var categoryColor: Color? = nil
     var goalTime: TimeInterval? = nil
+    
+    // Create a copy of the task with a new ID (for adding library tasks to today's list)
+    func copy() -> TaskItem {
+        TaskItem(
+            title: title,
+            tag: tag,
+            trackedTime: 0, // Reset tracked time for new instance
+            detail: detail,
+            isCompleted: false, // Reset completion status
+            categoryTitle: categoryTitle,
+            categoryColor: categoryColor,
+            goalTime: goalTime
+        )
+    }
 }
 
 private struct TagBadge: View {

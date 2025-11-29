@@ -10,7 +10,8 @@ struct AddTaskView: View {
     @State private var filterExpanded = false
     @State private var selectedFilter: TaskCategoryFilter = .all
     @State private var selectedTaskID: UUID?
-
+    @State private var editingTask: TaskItem?
+    
     var body: some View {
         NavigationStack {
             ZStack {
@@ -31,10 +32,19 @@ struct AddTaskView: View {
         }
         .navigationTitle("Add Task")
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(item: $editingTask) { task in
+            NavigationStack {
+                NewTaskView(tasks: $taskLibrary, taskToEdit: task)
+            }
+        }
     }
     }
 
+
+
+
     private var categoryFilter: some View {
+        // ... (unchanged)
         VStack(spacing: 0) {
             Button {
                 withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
@@ -130,6 +140,19 @@ struct AddTaskView: View {
                                     )
                                 }
                                 .buttonStyle(.plain)
+                                .contextMenu {
+                                    Button {
+                                        editingTask = task
+                                    } label: {
+                                        Label("Edit", systemImage: "pencil")
+                                    }
+                                    
+                                    Button(role: .destructive) {
+                                        deleteTask(task)
+                                    } label: {
+                                        Label("Delete", systemImage: "trash")
+                                    }
+                                }
                             }
                         }
                     } header: {
@@ -201,20 +224,20 @@ struct AddTaskView: View {
             return
         }
 
-        let newTask = TaskItem(
-            title: template.title,
-            tag: template.tag,
-            trackedTime: 0,
-            detail: template.detail,
-            isCompleted: false,
-            categoryTitle: template.categoryTitle,
-            categoryColor: template.categoryColor,
-            goalTime: template.goalTime
-        )
+        let newTask = template.copy()
         tasks.append(newTask)
         onTaskCreated?(newTask)
         selectedTaskID = nil
         dismiss()
+    }
+
+    private func deleteTask(_ task: TaskItem) {
+        if let index = taskLibrary.firstIndex(where: { $0.id == task.id }) {
+            taskLibrary.remove(at: index)
+        }
+        if selectedTaskID == task.id {
+            selectedTaskID = nil
+        }
     }
 }
 
@@ -347,7 +370,7 @@ private struct ExistingTaskCard: View {
                 }
             }
 
-            Spacer()
+
         }
         .padding(.horizontal, AppSpacing.medium)
         .padding(.vertical, AppSpacing.smallPlus)
@@ -383,6 +406,9 @@ private struct ExistingTaskCard: View {
     ]), taskLibrary: .constant([
         TaskItem(title: "Work on Project Dayflow", tag: .work, detail: "Finalize sprint backlog"),
         TaskItem(title: "Call with Mom", tag: .personal, detail: "Weekly check-in"),
-        TaskItem(title: "Library Task", tag: .fitness, detail: "Extra task")
+        TaskItem(title: "Library Task", tag: .fitness, detail: "Extra task", goalTime: 3600),
+        TaskItem(title: "Deep Work Session", tag: .work, detail: "Focus on coding", goalTime: 5400),
+        TaskItem(title: "Quick Jog", tag: .fitness, detail: "Morning cardio", goalTime: 1800),
+        TaskItem(title: "Meditation", tag: .personal, detail: "Clear mind", goalTime: 300)
     ]))
 }
