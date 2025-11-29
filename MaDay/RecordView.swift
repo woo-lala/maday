@@ -14,6 +14,10 @@ struct RecordView: View {
     @State private var sessionElapsed: TimeInterval = 0
     @State private var lastTickDate: Date?
     @State private var showAddTask = false
+    @State private var showGoalDialog = false
+    @State private var goalPromptedTaskID: UUID?
+    @State private var goalAcknowledgedTaskID: UUID?
+    @State private var goalDismissedTaskIDs: Set<UUID> = []
     @State private var editingTask: TaskItem?
     @State private var draggingTask: TaskItem?
     @State private var localTabSelection: TabItem = .home
@@ -28,7 +32,7 @@ struct RecordView: View {
         let libraryTasks: [TaskItem] = [
             TaskItem(title: "Work on Project Dayflow", tag: .work, detail: "Finalize sprint backlog and sync with design", categoryTitle: "Work", categoryColor: TaskItem.Tag.work.color),
             TaskItem(title: "Read Atomic Habits", tag: .personal, detail: "Read 20 pages before bed", categoryTitle: "Personal", categoryColor: TaskItem.Tag.personal.color),
-            TaskItem(title: "30 min HIIT Session", tag: .fitness, detail: "Power session from the Daily Burn plan", categoryTitle: "Fitness", categoryColor: TaskItem.Tag.fitness.color, goalTime: 1800),
+            TaskItem(title: "30 min HIIT Session", tag: .fitness, detail: "Power session from the Daily Burn plan", categoryTitle: "Fitness", categoryColor: TaskItem.Tag.fitness.color, goalTime: 60),
             TaskItem(title: "Review YouTube Analytics", tag: .work, detail: "Check watch time and retention charts", categoryTitle: "Work", categoryColor: TaskItem.Tag.work.color),
             TaskItem(title: "Deep Work Session", tag: .work, detail: "Focus on coding", categoryTitle: "Work", categoryColor: TaskItem.Tag.work.color, goalTime: 5400),
             TaskItem(title: "Quick Jog", tag: .fitness, detail: "Morning cardio", categoryTitle: "Fitness", categoryColor: TaskItem.Tag.fitness.color, goalTime: 1800),
@@ -174,12 +178,17 @@ struct RecordView: View {
         let activeTask = tasks.first { $0.id == activeTaskID }
         let selectedTask = tasks.first { $0.id == selectedTaskID }
         let targetTask = activeTask ?? selectedTask
+        let shouldShowStopwatch = {
+            guard let id = targetTask?.id else { return false }
+            return goalAcknowledgedTaskID == id || goalDismissedTaskIDs.contains(id)
+        }()
         
         return TimerSectionView(
             currentTime: sessionElapsed,
             totalTime: totalTrackedTime,
             goalTime: targetTask?.goalTime,
-            trackedTime: targetTask?.trackedTime ?? 0
+            trackedTime: targetTask?.trackedTime ?? 0,
+            showStopwatchAfterGoal: shouldShowStopwatch
         )
         .sectionCardStyle()
     }
@@ -193,6 +202,16 @@ struct RecordView: View {
             canPause: canPauseTimer,
             canStop: canStopTimer
         )
+        .alert("목표 시간을 달성했어요.", isPresented: $showGoalDialog) {
+            Button("이어하기") {
+                resumeAfterGoalPrompt()
+            }
+            Button("종료하기", role: .destructive) {
+                confirmStopTimer()
+            }
+        } message: {
+            Text("계속 기록할까요?")
+        }
     }
 
     private var canStartTimer: Bool {
@@ -214,6 +233,8 @@ struct RecordView: View {
             lastTickDate = nil
             sessionElapsed = 0
             activeTaskID = nil
+            goalPromptedTaskID = nil
+            goalAcknowledgedTaskID = nil
         }
         selectedTaskID = id
     }
@@ -224,6 +245,8 @@ struct RecordView: View {
         if activeTaskID != selectedID {
             activeTaskID = selectedID
             sessionElapsed = 0
+            goalPromptedTaskID = nil
+            goalAcknowledgedTaskID = nil
         }
 
         lastTickDate = Date()
@@ -237,13 +260,36 @@ struct RecordView: View {
         lastTickDate = nil
     }
 
-    private func stopTimer() {
-        guard activeTaskID != nil || sessionElapsed > 0 else { return }
-        accumulateElapsed()
-        isTimerRunning = false
-        lastTickDate = nil
+    private func confirmStopTimer() {
+        // If a goal dialog was shown/handled, remember it to avoid re-prompting immediately.
+        if showGoalDialog || goalPromptedTaskID != nil {
+            goalAcknowledgedTaskID = goalPromptedTaskID ?? activeTaskID
+            if let acknowledged = goalAcknowledgedTaskID {
+                goalDismissedTaskIDs.insert(acknowledged)
+            }
+        }
         sessionElapsed = 0
         activeTaskID = nil
+        lastTickDate = nil
+        isTimerRunning = false
+        showGoalDialog = false
+        goalPromptedTaskID = nil
+    }
+    
+    private func resumeAfterGoalPrompt() {
+        sessionElapsed = 0
+        isTimerRunning = true
+        lastTickDate = Date()
+        showGoalDialog = false
+        goalAcknowledgedTaskID = activeTaskID
+        if let activeID = activeTaskID {
+            goalDismissedTaskIDs.insert(activeID)
+        }
+    }
+    
+    private func stopTimer() {
+        // Compatibility helper for flows (e.g., delete) that need an immediate stop
+        confirmStopTimer()
     }
 
     private func accumulateElapsed(currentDate: Date = Date()) {
@@ -272,12 +318,28 @@ struct RecordView: View {
         updateTask(with: activeID) { item in
             item.trackedTime += delta
         }
+        checkGoal(for: activeID)
         lastTickDate = currentDate
     }
 
     private func updateTask(with id: UUID, mutate: (inout TaskItem) -> Void) {
         guard let index = tasks.firstIndex(where: { $0.id == id }) else { return }
         mutate(&tasks[index])
+    }
+    
+    private func checkGoal(for id: UUID) {
+        guard !showGoalDialog,
+              goalPromptedTaskID != id,
+              goalAcknowledgedTaskID != id,
+              !goalDismissedTaskIDs.contains(id) else { return }
+        guard let task = tasks.first(where: { $0.id == id }), let goal = task.goalTime, goal > 0 else { return }
+        guard task.trackedTime >= goal else { return }
+        
+        // Goal reached: pause timer and prompt the user
+        isTimerRunning = false
+        lastTickDate = nil
+        showGoalDialog = true
+        goalPromptedTaskID = id
     }
 
     private func toggleCompletion(for id: UUID) {
@@ -391,15 +453,22 @@ private struct TimerSectionView: View {
     let totalTime: TimeInterval
     var goalTime: TimeInterval? = nil
     var trackedTime: TimeInterval = 0
+    var showStopwatchAfterGoal: Bool = false
 
     var body: some View {
         VStack(spacing: AppSpacing.small) {
             if let goal = goalTime {
-                // Timer Mode: Show remaining time
-                let remaining = goal - trackedTime
-                Text(formattedTime(remaining))
-                    .font(AppFont.timerDisplay())
-                    .foregroundColor(remaining < 0 ? AppColor.destructive : AppColor.textPrimary)
+                if showStopwatchAfterGoal {
+                    Text(formattedTime(currentTime))
+                        .font(AppFont.timerDisplay())
+                        .foregroundColor(AppColor.textPrimary)
+                } else {
+                    // Timer Mode: Show remaining time
+                    let remaining = max(goal - trackedTime, 0)
+                    Text(formattedGoalTime(remaining))
+                        .font(AppFont.timerDisplay())
+                        .foregroundColor(AppColor.textPrimary)
+                }
             } else {
                 // Stopwatch Mode: Show current session time
                 Text(formattedTime(currentTime))
@@ -420,8 +489,7 @@ private struct TimerSectionView: View {
         let hours = totalSeconds / 3600
         let minutes = (totalSeconds % 3600) / 60
         let seconds = totalSeconds % 60
-        let sign = time < 0 ? "-" : ""
-        return String(format: "%@%02d:%02d:%02d", sign, hours, minutes, seconds)
+        return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
     }
 
     private func formattedTotal(_ time: TimeInterval) -> String {
@@ -429,6 +497,14 @@ private struct TimerSectionView: View {
         let hours = totalMinutes / 60
         let minutes = totalMinutes % 60
         return "\(hours)h \(minutes)m"
+    }
+    
+    private func formattedGoalTime(_ time: TimeInterval) -> String {
+        let totalSeconds = Int(time)
+        let hours = totalSeconds / 3600
+        let minutes = (totalSeconds % 3600) / 60
+        let seconds = totalSeconds % 60
+        return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
     }
 }
 
