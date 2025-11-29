@@ -4,6 +4,10 @@ struct SettingsView: View {
     @State private var isDailyReminderEnabled = true
     @State private var isWeeklyReportEnabled = false
     @State private var isWatchConnected = true
+    @State private var showDeleteAccount = false
+    @State private var showDataConsent = false
+    @State private var showBackupRestore = false
+    @State private var showContactSupport = false
     
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -23,6 +27,18 @@ struct SettingsView: View {
             .padding(.bottom, AppSpacing.xLarge + 80) // Extra padding for tab bar
         }
         .background(AppColor.background.ignoresSafeArea())
+        .navigationDestination(isPresented: $showDeleteAccount) {
+            DeleteAccountView()
+        }
+        .navigationDestination(isPresented: $showDataConsent) {
+            DataConsentView()
+        }
+        .navigationDestination(isPresented: $showBackupRestore) {
+            BackupRestoreView()
+        }
+        .navigationDestination(isPresented: $showContactSupport) {
+            ContactSupportView()
+        }
     }
     
     private var header: some View {
@@ -54,16 +70,21 @@ struct SettingsView: View {
                     .buttonStyle(SmallButtonStyle())
                 }
                 
-                SettingsRow(
-                    icon: "trash",
-                    title: "Delete Account",
-                    subtitle: "Permanently remove your account and data.",
-                    showDivider: false
-                ) {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(AppColor.textSecondary.opacity(0.5))
+                Button {
+                    showDeleteAccount = true
+                } label: {
+                    SettingsRow(
+                        icon: "trash",
+                        title: "Delete Account",
+                        subtitle: "Permanently remove your account and data.",
+                        showDivider: false
+                    ) {
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(AppColor.textSecondary.opacity(0.5))
+                    }
                 }
+                .buttonStyle(.plain)
             }
             .background(AppColor.surface)
             .cornerRadius(AppRadius.standard)
@@ -84,23 +105,33 @@ struct SettingsView: View {
                         .foregroundColor(AppColor.textSecondary)
                 }
                 
-                SettingsRow(
-                    icon: "person",
-                    title: "Data Usage & Consent",
-                    subtitle: "Review and manage data sharing preferences.",
-                    showDivider: true
-                ) {
-                    ChevronView()
+                Button {
+                    showDataConsent = true
+                } label: {
+                    SettingsRow(
+                        icon: "person",
+                        title: "Data Usage & Consent",
+                        subtitle: "Review and manage data sharing preferences.",
+                        showDivider: true
+                    ) {
+                        ChevronView()
+                    }
                 }
+                .buttonStyle(.plain)
                 
-                SettingsRow(
-                    icon: "externaldrive",
-                    title: "Data Backup & Restore",
-                    subtitle: "Manage your cloud backups.",
-                    showDivider: false
-                ) {
-                    ChevronView()
+                Button {
+                    showBackupRestore = true
+                } label: {
+                    SettingsRow(
+                        icon: "externaldrive",
+                        title: "Data Backup & Restore",
+                        subtitle: "Manage your cloud backups.",
+                        showDivider: false
+                    ) {
+                        ChevronView()
+                    }
                 }
+                .buttonStyle(.plain)
             }
             .background(AppColor.surface)
             .cornerRadius(AppRadius.standard)
@@ -171,14 +202,19 @@ struct SettingsView: View {
     private var supportSection: some View {
         SettingsSection(title: "Support & App Info") {
             VStack(spacing: 0) {
-                SettingsRow(
-                    icon: "doc.text",
-                    title: "Contact Support",
-                    subtitle: nil,
-                    showDivider: true
-                ) {
-                    ChevronView()
+                Button {
+                    showContactSupport = true
+                } label: {
+                    SettingsRow(
+                        icon: "doc.text",
+                        title: "Contact Support",
+                        subtitle: nil,
+                        showDivider: true
+                    ) {
+                        ChevronView()
+                    }
                 }
+                .buttonStyle(.plain)
                 
                 SettingsRow(
                     icon: "info.circle",
@@ -199,7 +235,7 @@ struct SettingsView: View {
 
 // MARK: - Helper Views
 
-private struct ChubbyToggleStyle: ToggleStyle {
+struct ChubbyToggleStyle: ToggleStyle {
     func makeBody(configuration: Configuration) -> some View {
         HStack {
             configuration.label
