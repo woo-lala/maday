@@ -261,6 +261,11 @@ struct RecordView: View {
     }
 
     private func confirmStopTimer() {
+        // Accumulate any remaining elapsed time if timer is still running
+        if isTimerRunning {
+            accumulateElapsed()
+        }
+        
         // If a goal dialog was shown/handled, remember it to avoid re-prompting immediately.
         if showGoalDialog || goalPromptedTaskID != nil {
             goalAcknowledgedTaskID = goalPromptedTaskID ?? activeTaskID
