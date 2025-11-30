@@ -28,6 +28,12 @@
 "settings.sync.now.desc" = "Update data across all your devices.";
 "settings.sync.button" = "Sync";
 
+/* Settings - Language */
+"settings.language.title" = "Language";
+"settings.language.system" = "System Default";
+"settings.language.english" = "English";
+"settings.language.korean" = "한국어";
+
 /* Settings - Notifications */
 "settings.noti.title" = "Notifications";
 "settings.noti.daily" = "Daily Reminder";
@@ -128,3 +134,66 @@
 "tab.record" = "Record";
 "tab.report" = "Report";
 "tab.settings" = "Settings";
+
+/* Record View */
+"record.title.today" = "Today";
+"record.section.my_tasks" = "My Tasks";
+"record.timer.goal_reached.title" = "Goal Reached!";
+"record.timer.goal_reached.continue" = "Continue";
+"record.timer.goal_reached.stop" = "Stop";
+"record.timer.goal_reached.message" = "Do you want to continue tracking?";
+"record.task.accumulated %@" = "Total: %@";
+"record.timer.total_today %@" = "Total Today: %@";
+"record.timer.start" = "Start";
+"record.timer.pause" = "Pause";
+"record.timer.stop" = "Stop";
+"common.edit" = "Edit";
+"common.delete" = "Delete";
+
+/* Add Task View */
+"add_task.title" = "Add Task";
+"add_task.section.existing" = "Existing Tasks";
+"add_task.empty.category" = "No tasks in this category yet";
+"add_task.create_new" = "Or create a new task";
+"add_task.card.goal %@" = "Goal: %@";
+
+/* Report View */
+"report.title" = "Weekly Report";
+"report.section.performance" = "Weekly Performance Overview";
+"report.hint.click_block" = "Click a block to view task details.";
+"report.section.ratio" = "Weekly Category Ratio";
+"report.section.distribution" = "Weekly Distribution";
+"report.hint.click_day" = "Click a day to view daily details.";
+
+/* Categories */
+"category.all" = "All Categories";
+"category.work" = "Work";
+"category.personal" = "Personal";
+"category.fitness" = "Fitness";
+"category.learn" = "Learn";
+"category.youtube" = "YouTube";
+"category.cooking" = "Cooking";
+"category.shopping" = "Shopping";
+"category.study" = "Study";
+"category.leisure" = "Leisure";
+"category.health" = "Health";
+
+/* Common */
+"common.add" = "Add";
+"common.save" = "Save";
+"common.cancel" = "Cancel";
+
+/* New Task View */
+"new_task.title.new" = "New Task";
+"new_task.title.edit" = "Edit Task";
+"new_task.field.name" = "Task Name";
+"new_task.placeholder.name" = "Enter task name";
+"new_task.field.desc" = "Description";
+"new_task.placeholder.desc" = "Add a short description...";
+"new_task.field.category" = "Category";
+"new_task.category.add.name" = "Name";
+"new_task.category.add.button" = "Add Category";
+"new_task.field.goal" = "Goal Time (Optional)";
+"new_task.goal.none" = "No Goal (Stopwatch Mode)";
+"new_task.picker.hours" = "Hours";
+"new_task.picker.minutes" = "Minutes";

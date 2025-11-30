@@ -19,25 +19,25 @@ struct DeleteAccountView: View {
             .padding(.bottom, AppSpacing.xLarge)
         }
         .background(AppColor.background.ignoresSafeArea())
-        .navigationTitle("Delete Account")
+        .navigationTitle("delete_account.title")
         .navigationBarTitleDisplayMode(.inline)
-        .alert("Delete Account?", isPresented: $showDeleteAlert) {
-            Button("Cancel", role: .cancel) { }
-            Button("Delete", role: .destructive) {
+        .alert("delete_account.alert.title", isPresented: $showDeleteAlert) {
+            Button("delete_account.alert.cancel", role: .cancel) { }
+            Button("delete_account.alert.delete", role: .destructive) {
                 performDelete()
             }
         } message: {
-            Text("This action cannot be undone. All your data will be permanently deleted.")
+            Text("delete_account.alert.message")
         }
     }
     
     private var warningSection: some View {
         VStack(spacing: AppSpacing.small) {
-            Text("Delete Account")
+            Text("delete_account.title")
                 .font(AppFont.largeTitle())
                 .foregroundColor(AppColor.textPrimary)
             
-            Text("Once you delete your account, there is no going back. Please be certain.")
+            Text("delete_account.warning")
                 .font(AppFont.body())
                 .foregroundColor(AppColor.textSecondary)
                 .multilineTextAlignment(.center)
@@ -49,16 +49,16 @@ struct DeleteAccountView: View {
     
     private var consequencesSection: some View {
         VStack(alignment: .leading, spacing: AppSpacing.medium) {
-            Text("What will be deleted:")
+            Text("delete_account.consequences.title")
                 .font(AppFont.headline())
                 .foregroundColor(AppColor.textPrimary)
             
             VStack(spacing: AppSpacing.small) {
-                ConsequenceRow(icon: "checkmark.circle.fill", text: "All your tasks and tracked time")
-                ConsequenceRow(icon: "checkmark.circle.fill", text: "Your weekly reports and analytics")
-                ConsequenceRow(icon: "checkmark.circle.fill", text: "All synced data across devices")
-                ConsequenceRow(icon: "checkmark.circle.fill", text: "Your account settings and preferences")
-                ConsequenceRow(icon: "checkmark.circle.fill", text: "Access to your Apple ID connection")
+                ConsequenceRow(icon: "checkmark.circle.fill", text: "delete_account.item.tasks")
+                ConsequenceRow(icon: "checkmark.circle.fill", text: "delete_account.item.reports")
+                ConsequenceRow(icon: "checkmark.circle.fill", text: "delete_account.item.sync")
+                ConsequenceRow(icon: "checkmark.circle.fill", text: "delete_account.item.settings")
+                ConsequenceRow(icon: "checkmark.circle.fill", text: "delete_account.item.apple_id")
             }
             .padding(AppSpacing.medium)
             .background(AppColor.surface)
@@ -68,7 +68,7 @@ struct DeleteAccountView: View {
     
     private var confirmationSection: some View {
         VStack(alignment: .leading, spacing: AppSpacing.small) {
-            Text("Type DELETE to confirm")
+            Text("delete_account.confirm.title")
                 .font(AppFont.headline())
                 .foregroundColor(AppColor.textPrimary)
             
@@ -91,7 +91,7 @@ struct DeleteAccountView: View {
                     ProgressView()
                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                 } else {
-                    Text("Delete My Account")
+                    Text("delete_account.button")
                         .font(AppFont.body())
                         .fontWeight(.semibold)
                 }
@@ -135,7 +135,7 @@ private struct ConsequenceRow: View {
                 .foregroundColor(AppColor.textSecondary)
                 .frame(width: 20)
             
-            Text(text)
+            Text(LocalizedStringKey(text))
                 .font(AppFont.body())
                 .foregroundColor(AppColor.textPrimary)
             

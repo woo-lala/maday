@@ -28,6 +28,12 @@
 "settings.sync.now.desc" = "모든 기기의 데이터를 업데이트합니다.";
 "settings.sync.button" = "동기화";
 
+/* Settings - Language */
+"settings.language.title" = "언어";
+"settings.language.system" = "시스템 기본 설정";
+"settings.language.english" = "English";
+"settings.language.korean" = "한국어";
+
 /* Settings - Notifications */
 "settings.noti.title" = "알림";
 "settings.noti.daily" = "일일 리마인더";
@@ -128,3 +134,66 @@
 "tab.record" = "기록";
 "tab.report" = "리포트";
 "tab.settings" = "설정";
+
+/* Record View */
+"record.title.today" = "오늘";
+"record.section.my_tasks" = "나의 할 일";
+"record.timer.goal_reached.title" = "목표 시간을 달성했어요.";
+"record.timer.goal_reached.continue" = "이어하기";
+"record.timer.goal_reached.stop" = "종료하기";
+"record.timer.goal_reached.message" = "계속 기록할까요?";
+"record.task.accumulated %@" = "누적: %@";
+"record.timer.total_today %@" = "오늘 총 시간: %@";
+"record.timer.start" = "시작";
+"record.timer.pause" = "일시정지";
+"record.timer.stop" = "정지";
+"common.edit" = "편집";
+"common.delete" = "삭제";
+
+/* Add Task View */
+"add_task.title" = "할 일 추가";
+"add_task.section.existing" = "기존 할 일";
+"add_task.empty.category" = "이 카테고리에 할 일이 없습니다";
+"add_task.create_new" = "또는 새로운 할 일 만들기";
+"add_task.card.goal %@" = "목표: %@";
+
+/* Report View */
+"report.title" = "주간 리포트";
+"report.section.performance" = "주간 성과 개요";
+"report.hint.click_block" = "블록을 클릭하여 상세 내용을 확인하세요.";
+"report.section.ratio" = "주간 카테고리 비율";
+"report.section.distribution" = "주간 분포";
+"report.hint.click_day" = "요일을 클릭하여 상세 내용을 확인하세요.";
+
+/* Categories */
+"category.all" = "전체 카테고리";
+"category.work" = "업무";
+"category.personal" = "개인";
+"category.fitness" = "운동";
+"category.learn" = "학습";
+"category.youtube" = "유튜브";
+"category.cooking" = "요리";
+"category.shopping" = "쇼핑";
+"category.study" = "공부";
+"category.leisure" = "여가";
+"category.health" = "건강";
+
+/* Common */
+"common.add" = "추가";
+"common.save" = "저장";
+"common.cancel" = "취소";
+
+/* New Task View */
+"new_task.title.new" = "새로운 할 일";
+"new_task.title.edit" = "할 일 편집";
+"new_task.field.name" = "할 일 이름";
+"new_task.placeholder.name" = "할 일 이름을 입력하세요";
+"new_task.field.desc" = "설명";
+"new_task.placeholder.desc" = "간단한 설명을 추가하세요...";
+"new_task.field.category" = "카테고리";
+"new_task.category.add.name" = "이름";
+"new_task.category.add.button" = "카테고리 추가";
+"new_task.field.goal" = "목표 시간 (선택)";
+"new_task.goal.none" = "목표 없음 (스톱워치 모드)";
+"new_task.picker.hours" = "시간";
+"new_task.picker.minutes" = "분";

@@ -95,7 +95,7 @@ struct RecordView: View {
 
     private var appBar: some View {
         HStack {
-            Text("Today")
+            Text("record.title.today")
                 .font(AppFont.largeTitle())
                 .foregroundColor(AppColor.textPrimary)
             Spacer()
@@ -105,7 +105,7 @@ struct RecordView: View {
     private var tasksSection: some View {
         VStack(alignment: .leading, spacing: AppSpacing.medium) {
             HStack {
-                Text("My Tasks")
+                Text("record.section.my_tasks")
                     .sectionTitleStyle()
 
                 Spacer()
@@ -143,13 +143,13 @@ struct RecordView: View {
                         Button {
                             editingTask = task
                         } label: {
-                            Label("Edit", systemImage: "pencil")
+                            Label("common.edit", systemImage: "pencil")
                         }
                         
                         Button(role: .destructive) {
                             deleteTask(task)
                         } label: {
-                            Label("Delete", systemImage: "trash")
+                            Label("common.delete", systemImage: "trash")
                         }
                     }
                     .onDrag {
@@ -202,15 +202,15 @@ struct RecordView: View {
             canPause: canPauseTimer,
             canStop: canStopTimer
         )
-        .alert("목표 시간을 달성했어요.", isPresented: $showGoalDialog) {
-            Button("이어하기") {
+        .alert("record.timer.goal_reached.title", isPresented: $showGoalDialog) {
+            Button("record.timer.goal_reached.continue") {
                 resumeAfterGoalPrompt()
             }
-            Button("종료하기", role: .destructive) {
+            Button("record.timer.goal_reached.stop", role: .destructive) {
                 confirmStopTimer()
             }
         } message: {
-            Text("계속 기록할까요?")
+            Text("record.timer.goal_reached.message")
         }
     }
 
@@ -390,7 +390,7 @@ private struct TaskCardView: View {
                     .multilineTextAlignment(.leading)
                     .strikethrough(task.isCompleted, color: AppColor.textSecondary)
 
-                Text("Tracked: \(formattedTrackedTime(trackedTime))")
+                Text("record.task.accumulated \(formattedTrackedTime(trackedTime))")
                     .font(AppFont.caption())
                     .foregroundColor(task.isCompleted ? AppColor.textSecondary.opacity(0.6) : AppColor.textSecondary)
             }
@@ -481,7 +481,7 @@ private struct TimerSectionView: View {
                     .foregroundColor(AppColor.textPrimary)
             }
 
-            Text("Total Time Today: \(formattedTotal(totalTime))")
+            Text("record.timer.total_today \(formattedTotal(totalTime))")
                 .font(AppFont.body())
                 .foregroundColor(AppColor.textSecondary)
         }
@@ -526,7 +526,7 @@ private struct TimerControlView: View {
             AppButton(style: .primary, action: onStart) {
                 HStack(spacing: AppSpacing.small) {
                     Image(systemName: "play.fill")
-                    Text("Start")
+                    Text("record.timer.start")
                 }
             }
             .disabled(!canStart)
@@ -535,7 +535,7 @@ private struct TimerControlView: View {
             AppButton(style: .neutral, action: onPause) {
                 HStack(spacing: AppSpacing.small) {
                     Image(systemName: "pause.fill")
-                    Text("Pause")
+                    Text("record.timer.pause")
                 }
             }
             .disabled(!canPause)
@@ -544,7 +544,7 @@ private struct TimerControlView: View {
             AppButton(style: .destructive, action: onStop) {
                 HStack(spacing: AppSpacing.small) {
                     Image(systemName: "stop.fill")
-                    Text("Stop")
+                    Text("record.timer.stop")
                 }
             }
             .disabled(!canStop)

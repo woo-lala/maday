@@ -43,11 +43,11 @@ struct SettingsView: View {
     
     private var header: some View {
         VStack(alignment: .leading, spacing: AppSpacing.small) {
-            Text("Settings")
+            Text("settings.title")
                 .font(AppFont.largeTitle())
                 .foregroundColor(AppColor.textPrimary)
             
-            Text("Manage your account, privacy, and sync options.")
+            Text("settings.subtitle")
                 .font(AppFont.body())
                 .foregroundColor(AppColor.textSecondary)
         }
@@ -56,15 +56,15 @@ struct SettingsView: View {
     // MARK: - Sections
     
     private var accountSection: some View {
-        SettingsSection(title: "Account & Security") {
+        SettingsSection(title: "settings.account.title") {
             VStack(spacing: 0) {
                 SettingsRow(
                     icon: "apple.logo",
-                    title: "Apple Sign-In",
-                    subtitle: "Connect your Apple ID for secure login.",
+                    title: "settings.account.apple_signin",
+                    subtitle: "settings.account.apple_signin.desc",
                     showDivider: true
                 ) {
-                    Button("Connect") {
+                    Button("settings.account.connect") {
                         // Action
                     }
                     .buttonStyle(SmallButtonStyle())
@@ -75,8 +75,8 @@ struct SettingsView: View {
                 } label: {
                     SettingsRow(
                         icon: "trash",
-                        title: "Delete Account",
-                        subtitle: "Permanently remove your account and data.",
+                        title: "settings.account.delete",
+                        subtitle: "settings.account.delete.desc",
                         showDivider: false
                     ) {
                         Image(systemName: "chevron.right")
@@ -92,12 +92,12 @@ struct SettingsView: View {
     }
     
     private var privacySection: some View {
-        SettingsSection(title: "Privacy & Data") {
+        SettingsSection(title: "settings.privacy.title") {
             VStack(spacing: 0) {
                 SettingsRow(
                     icon: "lock",
-                    title: "Privacy Policy",
-                    subtitle: "Understand how your data is handled.",
+                    title: "settings.privacy.policy",
+                    subtitle: "settings.privacy.policy.desc",
                     showDivider: true
                 ) {
                     Image(systemName: "arrow.up.right.square")
@@ -110,8 +110,8 @@ struct SettingsView: View {
                 } label: {
                     SettingsRow(
                         icon: "person",
-                        title: "Data Usage & Consent",
-                        subtitle: "Review and manage data sharing preferences.",
+                        title: "settings.privacy.usage",
+                        subtitle: "settings.privacy.usage.desc",
                         showDivider: true
                     ) {
                         ChevronView()
@@ -124,8 +124,8 @@ struct SettingsView: View {
                 } label: {
                     SettingsRow(
                         icon: "externaldrive",
-                        title: "Data Backup & Restore",
-                        subtitle: "Manage your cloud backups.",
+                        title: "settings.privacy.backup",
+                        subtitle: "settings.privacy.backup.desc",
                         showDivider: false
                     ) {
                         ChevronView()
@@ -139,12 +139,12 @@ struct SettingsView: View {
     }
     
     private var syncSection: some View {
-        SettingsSection(title: "Sync & Devices") {
+        SettingsSection(title: "settings.sync.title") {
             VStack(spacing: 0) {
                 SettingsRow(
                     icon: "applewatch",
-                    title: "Apple Watch Connection",
-                    subtitle: isWatchConnected ? "Connected" : "Disconnected",
+                    title: "settings.sync.watch",
+                    subtitle: isWatchConnected ? "settings.sync.connected" : "settings.sync.disconnected",
                     showDivider: true
                 ) {
                     Toggle("", isOn: $isWatchConnected)
@@ -154,11 +154,11 @@ struct SettingsView: View {
                 
                 SettingsRow(
                     icon: "arrow.triangle.2.circlepath",
-                    title: "Sync Now",
-                    subtitle: "Update data across all your devices.",
+                    title: "settings.sync.now",
+                    subtitle: "settings.sync.now.desc",
                     showDivider: false
                 ) {
-                    Button("Sync") {
+                    Button("settings.sync.button") {
                         // Action
                     }
                     .buttonStyle(SmallButtonStyle(isPrimary: true))
@@ -170,12 +170,12 @@ struct SettingsView: View {
     }
     
     private var notificationsSection: some View {
-        SettingsSection(title: "Notifications") {
+        SettingsSection(title: "settings.noti.title") {
             VStack(spacing: 0) {
                 SettingsRow(
                     icon: "bell",
-                    title: "Daily Reminder",
-                    subtitle: "Receive a daily notification.",
+                    title: "settings.noti.daily",
+                    subtitle: "settings.noti.daily.desc",
                     showDivider: true
                 ) {
                     Toggle("", isOn: $isDailyReminderEnabled)
@@ -185,8 +185,8 @@ struct SettingsView: View {
                 
                 SettingsRow(
                     icon: "bell.badge",
-                    title: "Weekly Report Notification",
-                    subtitle: "Get a summary of your activity.",
+                    title: "settings.noti.weekly",
+                    subtitle: "settings.noti.weekly.desc",
                     showDivider: false
                 ) {
                     Toggle("", isOn: $isWeeklyReportEnabled)
@@ -200,14 +200,14 @@ struct SettingsView: View {
     }
     
     private var supportSection: some View {
-        SettingsSection(title: "Support & App Info") {
+        SettingsSection(title: "settings.support.title") {
             VStack(spacing: 0) {
                 Button {
                     showContactSupport = true
                 } label: {
                     SettingsRow(
                         icon: "doc.text",
-                        title: "Contact Support",
+                        title: "settings.support.contact",
                         subtitle: nil,
                         showDivider: true
                     ) {
@@ -218,7 +218,7 @@ struct SettingsView: View {
                 
                 SettingsRow(
                     icon: "info.circle",
-                    title: "App Version",
+                    title: "settings.support.version",
                     subtitle: "2.4.1",
                     showDivider: false
                 ) {
@@ -274,7 +274,7 @@ private struct SettingsSection<Content: View>: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: AppSpacing.medium) {
-            Text(title)
+            Text(LocalizedStringKey(title))
                 .font(AppFont.headline())
                 .foregroundColor(AppColor.textPrimary)
             
@@ -307,12 +307,12 @@ private struct SettingsRow<Trailing: View>: View {
                     .frame(width: 24)
                 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
+                    Text(LocalizedStringKey(title))
                         .font(AppFont.body())
                         .foregroundColor(AppColor.textPrimary)
                     
                     if let subtitle = subtitle {
-                        Text(subtitle)
+                        Text(LocalizedStringKey(subtitle))
                             .font(AppFont.caption())
                             .foregroundColor(AppColor.textSecondary)
                             .lineLimit(2)

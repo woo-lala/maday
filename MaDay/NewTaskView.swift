@@ -72,7 +72,7 @@ struct NewTaskView: View {
                 .padding(.bottom, AppSpacing.xLarge)
             }
         }
-        .navigationTitle(taskToEdit == nil ? "New Task" : "Edit Task")
+        .navigationTitle(taskToEdit == nil ? "new_task.title.new" : "new_task.title.edit")
         .navigationBarTitleDisplayMode(.inline)
         .safeAreaInset(edge: .bottom) {
             saveButtonBar
@@ -84,24 +84,24 @@ struct NewTaskView: View {
     private var formSection: some View {
         VStack(alignment: .leading, spacing: AppSpacing.medium) {
             VStack(alignment: .leading, spacing: AppSpacing.small) {
-                Text("Task Name")
+                Text("new_task.field.name")
                     .font(AppFont.callout())
                     .foregroundColor(AppColor.textSecondary)
 
-                AppTextField("Enter task name", text: $newTaskName)
+                AppTextField("new_task.placeholder.name", text: $newTaskName)
             }
 
             VStack(alignment: .leading, spacing: AppSpacing.small) {
-                Text("Description")
+                Text("new_task.field.desc")
                     .font(AppFont.callout())
                     .foregroundColor(AppColor.textSecondary)
 
-                AppTextEditor("Add a short description...", text: $newTaskDescription)
+                AppTextEditor("new_task.placeholder.desc", text: $newTaskDescription)
                     .frame(minHeight: 120)
             }
 
             VStack(alignment: .leading, spacing: AppSpacing.small) {
-                Text("Category")
+                Text("new_task.field.category")
                     .font(AppFont.callout())
                     .foregroundColor(AppColor.textSecondary)
 
@@ -161,7 +161,7 @@ struct NewTaskView: View {
                             if showAddCategoryForm {
                                 VStack(alignment: .leading, spacing: AppSpacing.small) {
                                     HStack(spacing: AppSpacing.small) {
-                                        AppTextField("Name", text: $newCategoryName)
+                                        AppTextField("new_task.category.add.name", text: $newCategoryName)
 
                                         HStack(spacing: AppSpacing.xSmall) {
                                             ForEach(availablePalette) { choice in
@@ -184,7 +184,7 @@ struct NewTaskView: View {
 
                                     HStack(spacing: AppSpacing.small) {
                                         Button(action: addCategory) {
-                                            Text("Add")
+                                            Text("common.add")
                                                 .font(AppFont.button())
                                                 .frame(maxWidth: .infinity)
                                                 .frame(height: AppMetrics.buttonHeight)
@@ -203,7 +203,7 @@ struct NewTaskView: View {
                                                 newCategoryName = ""
                                             }
                                         } label: {
-                                            Text("Cancel")
+                                            Text("common.cancel")
                                                 .font(AppFont.button())
                                                 .frame(height: AppMetrics.buttonHeight)
                                                 .foregroundColor(AppColor.textSecondary)
@@ -226,7 +226,7 @@ struct NewTaskView: View {
                                         Image(systemName: "plus")
                                             .font(.system(size: 14, weight: .semibold))
                                             .foregroundColor(AppColor.white)
-                                        Text("Add Category")
+                                        Text("new_task.category.add.button")
                                             .font(AppFont.body())
                                             .foregroundColor(AppColor.white)
                                     }
@@ -257,7 +257,7 @@ struct NewTaskView: View {
             }
             
             VStack(alignment: .leading, spacing: AppSpacing.small) {
-                Text("Goal Time (Optional)")
+                Text("new_task.field.goal")
                     .font(AppFont.callout())
                     .foregroundColor(AppColor.textSecondary)
 
@@ -287,7 +287,7 @@ struct NewTaskView: View {
                             .padding(.horizontal, AppSpacing.medium)
                         
                         HStack {
-                            Picker("Hours", selection: $goalHours) {
+                            Picker("new_task.picker.hours", selection: $goalHours) {
                                 ForEach(0..<24) { hour in
                                     Text("\(hour) h").tag(hour)
                                 }
@@ -295,7 +295,7 @@ struct NewTaskView: View {
                             .pickerStyle(.wheel)
                             .frame(height: 120)
                             
-                            Picker("Minutes", selection: $goalMinutes) {
+                            Picker("new_task.picker.minutes", selection: $goalMinutes) {
                                 ForEach(0..<60) { minute in
                                     Text("\(minute) m").tag(minute)
                                 }
@@ -319,7 +319,7 @@ struct NewTaskView: View {
 
     private var goalTimeText: String {
         if goalHours == 0 && goalMinutes == 0 {
-            return "No Goal (Stopwatch Mode)"
+            return NSLocalizedString("new_task.goal.none", comment: "")
         }
         return "\(goalHours)h \(goalMinutes)m"
     }
@@ -327,7 +327,7 @@ struct NewTaskView: View {
     private var saveButtonBar: some View {
         VStack(spacing: AppSpacing.small) {
             AppButton(style: .primary, action: saveTask) {
-                Text("Save")
+                Text("common.save")
             }
             .disabled(trimmedTaskName.isEmpty)
             .opacity(trimmedTaskName.isEmpty ? 0.6 : 1)

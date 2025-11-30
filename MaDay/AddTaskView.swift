@@ -30,7 +30,7 @@ struct AddTaskView: View {
         .safeAreaInset(edge: .bottom) {
             saveButtonBar
         }
-        .navigationTitle("Add Task")
+        .navigationTitle("add_task.title")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $editingTask) { task in
             NavigationStack {
@@ -116,11 +116,11 @@ struct AddTaskView: View {
 
     private var existingTasksSection: some View {
         VStack(alignment: .leading, spacing: AppSpacing.medium) {
-            Text("Existing Tasks")
+            Text("add_task.section.existing")
                 .sectionTitleStyle()
 
             if displayCategories.isEmpty {
-                Text("No tasks in this category yet")
+                Text("add_task.empty.category")
                     .font(AppFont.bodyRegular())
                     .foregroundColor(AppColor.textSecondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -144,13 +144,13 @@ struct AddTaskView: View {
                                     Button {
                                         editingTask = task
                                     } label: {
-                                        Label("Edit", systemImage: "pencil")
+                                        Label("common.edit", systemImage: "pencil")
                                     }
                                     
                                     Button(role: .destructive) {
                                         deleteTask(task)
                                     } label: {
-                                        Label("Delete", systemImage: "trash")
+                                        Label("common.delete", systemImage: "trash")
                                     }
                                 }
                             }
@@ -168,7 +168,7 @@ struct AddTaskView: View {
                     selectedTaskID = newTask.id
                 })
             } label: {
-                Text("Or create a new task")
+                Text("add_task.create_new")
                     .font(AppFont.caption())
                     .foregroundColor(AppColor.primary)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -181,7 +181,7 @@ struct AddTaskView: View {
             AppButton(style: .primary) {
                 addSelectedTask()
             } label: {
-                Text("Add")
+                Text("common.add")
             }
             .disabled(selectedTaskID == nil)
             .opacity(selectedTaskID == nil ? 0.6 : 1)
@@ -254,13 +254,13 @@ enum TaskCategory: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .work: return "Work"
-        case .personal: return "Personal"
-        case .fitness: return "Fitness"
-        case .learn: return "Learn"
-        case .youtube: return "YouTube"
-        case .cooking: return "Cooking"
-        case .shopping: return "Shopping"
+        case .work: return NSLocalizedString("category.work", comment: "")
+        case .personal: return NSLocalizedString("category.personal", comment: "")
+        case .fitness: return NSLocalizedString("category.fitness", comment: "")
+        case .learn: return NSLocalizedString("category.learn", comment: "")
+        case .youtube: return NSLocalizedString("category.youtube", comment: "")
+        case .cooking: return NSLocalizedString("category.cooking", comment: "")
+        case .shopping: return NSLocalizedString("category.shopping", comment: "")
         }
     }
 
@@ -307,14 +307,14 @@ enum TaskCategoryFilter: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .all: return "All Categories"
-        case .work: return "Work"
-        case .personal: return "Personal"
-        case .fitness: return "Fitness"
-        case .learn: return "Learn"
-        case .youtube: return "YouTube"
-        case .cooking: return "Cooking"
-        case .shopping: return "Shopping"
+        case .all: return NSLocalizedString("category.all", comment: "")
+        case .work: return NSLocalizedString("category.work", comment: "")
+        case .personal: return NSLocalizedString("category.personal", comment: "")
+        case .fitness: return NSLocalizedString("category.fitness", comment: "")
+        case .learn: return NSLocalizedString("category.learn", comment: "")
+        case .youtube: return NSLocalizedString("category.youtube", comment: "")
+        case .cooking: return NSLocalizedString("category.cooking", comment: "")
+        case .shopping: return NSLocalizedString("category.shopping", comment: "")
         }
     }
 
@@ -354,7 +354,7 @@ private struct ExistingTaskCard: View {
                     Spacer()
                     
                     if let goal = task.goalTime {
-                        Text("Goal: \(formattedGoalTime(goal))")
+                        Text("add_task.card.goal \(formattedGoalTime(goal))")
                             .font(AppFont.caption())
                             .foregroundColor(AppColor.primary)
                             .fontWeight(.medium)

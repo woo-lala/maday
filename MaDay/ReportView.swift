@@ -2,7 +2,11 @@ import SwiftUI
 
 struct ReportView: View {
     @State private var currentWeekStart: Date = Date().startOfWeek
-    @State private var selectedDay: String = "Mon"
+    @State private var selectedDay: String = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "E"
+        return formatter.string(from: Date().startOfWeek)
+    }()
     @State private var isCalendarPresented = false
 
     private let categoryColors: [String: Color] = [
@@ -13,7 +17,7 @@ struct ReportView: View {
         "Personal": AppColor.personal
     ]
 
-    private var weeklyTimelineData: [DayTimeline] { DayTimeline.sample }
+    private var weeklyTimelineData: [DayTimeline] { DayTimeline.generate(startOfWeek: currentWeekStart) }
     private var categoryRatioData: [CategoryRatio] { CategoryRatio.sample }
     
     private var weeklyDistributionData: [DayDistribution] {
@@ -48,7 +52,7 @@ struct ReportView: View {
     // MARK: Header
     private var header: some View {
         VStack(alignment: .leading, spacing: AppSpacing.medium) {
-            Text("Weekly Report")
+            Text("report.title")
                 .font(AppFont.largeTitle())
                 .foregroundColor(AppColor.textPrimary)
 
@@ -92,10 +96,10 @@ struct ReportView: View {
 
     private var weeklyTimeline: some View {
         VStack(alignment: .leading, spacing: AppSpacing.medium) {
-            Text("Weekly Performance Overview")
+            Text("report.section.performance")
                 .sectionTitleStyle()
 
-            Text("Click a block to view task details.")
+            Text("report.hint.click_block")
                 .font(AppFont.caption())
                 .foregroundColor(AppColor.textSecondary)
 
@@ -228,7 +232,7 @@ struct ReportView: View {
     // MARK: Category Ratio
     private var categoryRatio: some View {
         VStack(alignment: .leading, spacing: AppSpacing.medium) {
-            Text("Weekly Category Ratio")
+            Text("report.section.ratio")
                 .sectionTitleStyle()
 
             let sortedData = categoryRatioData.sorted { $0.percentage > $1.percentage }
@@ -243,7 +247,7 @@ struct ReportView: View {
                             Circle()
                                 .fill(categoryColors[item.category] ?? AppColor.primary)
                                 .frame(width: 10, height: 10)
-                            Text("\(item.category) • \(Int(item.percentage))%")
+                            Text("\(NSLocalizedString("category." + item.category.lowercased(), comment: "")) • \(Int(item.percentage))%")
                                 .font(AppFont.body())
                                 .foregroundColor(AppColor.textPrimary)
                         }
@@ -257,10 +261,10 @@ struct ReportView: View {
     // MARK: Weekly Distribution
     private var weeklyDistribution: some View {
         VStack(alignment: .leading, spacing: AppSpacing.medium) {
-            Text("Weekly Distribution")
+            Text("report.section.distribution")
                 .sectionTitleStyle()
 
-            Text("Click a day to view daily details.")
+            Text("report.hint.click_day")
                 .font(AppFont.caption())
                 .foregroundColor(AppColor.textSecondary)
 
@@ -558,33 +562,44 @@ private struct DayTimeline: Identifiable {
         let durationRatio: Double // 0...1 of day
     }
 
-    static let sample: [DayTimeline] = [
-        DayTimeline(day: "Mon", blocks: [
-            .init(category: "Work", title: "Project Planning", startRatio: 0.25, durationRatio: 0.25),
-            .init(category: "Study", title: "iOS Development", startRatio: 0.6, durationRatio: 0.15)
-        ]),
-        DayTimeline(day: "Tue", blocks: [
-            .init(category: "Work", title: "Client Meeting", startRatio: 0.2, durationRatio: 0.3),
-            .init(category: "Personal", title: "Grocery Shopping", startRatio: 0.65, durationRatio: 0.1)
-        ]),
-        DayTimeline(day: "Wed", blocks: [
-            .init(category: "Work", title: "Code Review", startRatio: 0.3, durationRatio: 0.25),
-            .init(category: "Leisure", title: "Gaming", startRatio: 0.7, durationRatio: 0.1)
-        ]),
-        DayTimeline(day: "Thu", blocks: [
-            .init(category: "Work", title: "Deep Work", startRatio: 0.2, durationRatio: 0.35)
-        ]),
-        DayTimeline(day: "Fri", blocks: [
-            .init(category: "Work", title: "Weekly Sync", startRatio: 0.25, durationRatio: 0.3),
-            .init(category: "Health", title: "Gym", startRatio: 0.65, durationRatio: 0.1)
-        ]),
-        DayTimeline(day: "Sat", blocks: [
-            .init(category: "Leisure", title: "Movie Night", startRatio: 0.4, durationRatio: 0.25)
-        ]),
-        DayTimeline(day: "Sun", blocks: [
-            .init(category: "Personal", title: "Reading", startRatio: 0.3, durationRatio: 0.2)
-        ])
-    ]
+    static func generate(startOfWeek: Date) -> [DayTimeline] {
+        let calendar = Calendar.current
+        let formatter = DateFormatter()
+        formatter.dateFormat = "E"
+        
+        func day(_ offset: Int) -> String {
+            let date = calendar.date(byAdding: .day, value: offset, to: startOfWeek) ?? startOfWeek
+            return formatter.string(from: date)
+        }
+        
+        return [
+            DayTimeline(day: day(0), blocks: [
+                .init(category: "Work", title: "Project Planning", startRatio: 0.25, durationRatio: 0.25),
+                .init(category: "Study", title: "iOS Development", startRatio: 0.6, durationRatio: 0.15)
+            ]),
+            DayTimeline(day: day(1), blocks: [
+                .init(category: "Work", title: "Client Meeting", startRatio: 0.2, durationRatio: 0.3),
+                .init(category: "Personal", title: "Grocery Shopping", startRatio: 0.65, durationRatio: 0.1)
+            ]),
+            DayTimeline(day: day(2), blocks: [
+                .init(category: "Work", title: "Code Review", startRatio: 0.3, durationRatio: 0.25),
+                .init(category: "Leisure", title: "Gaming", startRatio: 0.7, durationRatio: 0.1)
+            ]),
+            DayTimeline(day: day(3), blocks: [
+                .init(category: "Work", title: "Deep Work", startRatio: 0.2, durationRatio: 0.35)
+            ]),
+            DayTimeline(day: day(4), blocks: [
+                .init(category: "Work", title: "Weekly Sync", startRatio: 0.25, durationRatio: 0.3),
+                .init(category: "Health", title: "Gym", startRatio: 0.65, durationRatio: 0.1)
+            ]),
+            DayTimeline(day: day(5), blocks: [
+                .init(category: "Leisure", title: "Movie Night", startRatio: 0.4, durationRatio: 0.25)
+            ]),
+            DayTimeline(day: day(6), blocks: [
+                .init(category: "Personal", title: "Reading", startRatio: 0.3, durationRatio: 0.2)
+            ])
+        ]
+    }
 }
 
 private let timeTicks: [(label: String, position: Double)] = [
@@ -644,22 +659,28 @@ private struct DailyTask: Identifiable {
     let duration: String
 
     static func generate(startOfWeek: Date) -> [DailyTask] {
-        // Return static sample data for now, but could be dynamic
-        return sample
-    }
+        let calendar = Calendar.current
+        let formatter = DateFormatter()
+        formatter.dateFormat = "E"
+        
+        func day(_ offset: Int) -> String {
+            let date = calendar.date(byAdding: .day, value: offset, to: startOfWeek) ?? startOfWeek
+            return formatter.string(from: date)
+        }
 
-    static let sample: [DailyTask] = [
-        .init(day: "Mon", title: "Project Planning", duration: "1h 20m"),
-        .init(day: "Mon", title: "Client Meeting", duration: "0h 50m"),
-        .init(day: "Mon", title: "Design Review", duration: "0h 40m"),
-        .init(day: "Tue", title: "Code Review", duration: "1h 00m"),
-        .init(day: "Tue", title: "Documentation", duration: "0h 30m"),
-        .init(day: "Wed", title: "Research", duration: "1h 00m"),
-        .init(day: "Thu", title: "Development", duration: "3h 00m"),
-        .init(day: "Fri", title: "Testing", duration: "1h 30m"),
-        .init(day: "Sat", title: "Family Time", duration: "2h 00m"),
-        .init(day: "Sun", title: "Reading", duration: "1h 15m")
-    ]
+        return [
+            .init(day: day(0), title: "Project Planning", duration: "1h 20m"),
+            .init(day: day(0), title: "Client Meeting", duration: "0h 50m"),
+            .init(day: day(0), title: "Design Review", duration: "0h 40m"),
+            .init(day: day(1), title: "Code Review", duration: "1h 00m"),
+            .init(day: day(1), title: "Documentation", duration: "0h 30m"),
+            .init(day: day(2), title: "Research", duration: "1h 00m"),
+            .init(day: day(3), title: "Development", duration: "3h 00m"),
+            .init(day: day(4), title: "Testing", duration: "1h 30m"),
+            .init(day: day(5), title: "Family Time", duration: "2h 00m"),
+            .init(day: day(6), title: "Reading", duration: "1h 15m")
+        ]
+    }
 }
 
 extension Date {
