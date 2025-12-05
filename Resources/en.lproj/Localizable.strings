@@ -156,6 +156,7 @@
 "add_task.empty.category" = "No tasks in this category yet";
 "add_task.create_new" = "Or create a new task";
 "add_task.card.goal %@" = "Goal: %@";
+"add_task.card.checklist_preview %d" = "%d checklist items";
 
 /* Report View */
 "report.title" = "Weekly Report";

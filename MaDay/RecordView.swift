@@ -34,7 +34,14 @@ struct RecordView: View {
             TaskItem(title: "Read Atomic Habits", tag: .personal, detail: "Read 20 pages before bed", categoryTitle: "Personal", categoryColor: TaskItem.Tag.personal.color),
             TaskItem(title: "30 min HIIT Session", tag: .fitness, detail: "Power session from the Daily Burn plan", categoryTitle: "Fitness", categoryColor: TaskItem.Tag.fitness.color, goalTime: 60),
             TaskItem(title: "Review YouTube Analytics", tag: .work, detail: "Check watch time and retention charts", categoryTitle: "Work", categoryColor: TaskItem.Tag.work.color),
-            TaskItem(title: "Deep Work Session", tag: .work, detail: "Focus on coding", categoryTitle: "Work", categoryColor: TaskItem.Tag.work.color, goalTime: 5400),
+            TaskItem(title: "Deep Work Session", tag: .work, 
+                    checklist: [
+                        ChecklistItem(text: "Review PR requests", isCompleted: true),
+                        ChecklistItem(text: "Complete backend API", isCompleted: false),
+                        ChecklistItem(text: "Write unit tests", isCompleted: false),
+                        ChecklistItem(text: "Update documentation", isCompleted: false)
+                    ],
+                    categoryTitle: "Work", categoryColor: TaskItem.Tag.work.color, goalTime: 5400),
             TaskItem(title: "Quick Jog", tag: .fitness, detail: "Morning cardio", categoryTitle: "Fitness", categoryColor: TaskItem.Tag.fitness.color, goalTime: 1800),
             TaskItem(title: "Meditation", tag: .personal, detail: "Clear mind", categoryTitle: "Personal", categoryColor: TaskItem.Tag.personal.color, goalTime: 300)
         ]
@@ -42,8 +49,8 @@ struct RecordView: View {
         // Today's tasks - start with copies of some library tasks as examples
         let todayTasks: [TaskItem] = [
             libraryTasks[0].copy(),
-            libraryTasks[2].copy(),
-            libraryTasks[4].copy()
+            libraryTasks[4].copy(), // Deep Work Session with checklist
+            libraryTasks[2].copy()
         ]
         
         _taskLibrary = State(initialValue: libraryTasks)
@@ -135,7 +142,10 @@ struct RecordView: View {
                             isSelected: selectedTaskID == task.id,
                             isActive: activeTaskID == task.id,
                             trackedTime: task.trackedTime,
-                            onToggleComplete: { toggleCompletion(for: task.id) }
+                            onToggleComplete: { toggleCompletion(for: task.id) },
+                            onToggleChecklistItem: { index in
+                                toggleChecklistItem(taskId: task.id, itemIndex: index)
+                            }
                         )
                     }
                     .buttonStyle(.plain)
@@ -192,6 +202,14 @@ struct RecordView: View {
         )
         .sectionCardStyle()
     }
+    
+    private func toggleChecklistItem(taskId: UUID, itemIndex: Int) {
+        guard let taskIndex = tasks.firstIndex(where: { $0.id == taskId }) else { return }
+        guard itemIndex < tasks[taskIndex].checklist.count else { return }
+        tasks[taskIndex].checklist[itemIndex].isCompleted.toggle()
+    }
+
+
 
     private var timerControls: some View {
         TimerControlView(
@@ -372,35 +390,97 @@ private struct TaskCardView: View {
     let isActive: Bool
     let trackedTime: TimeInterval
     let onToggleComplete: () -> Void
+    var onToggleChecklistItem: ((Int) -> Void)? = nil
+    
+    @State private var isExpanded: Bool = false
 
     var body: some View {
-        HStack(spacing: AppSpacing.medium) {
-            Button(action: onToggleComplete) {
-                Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 22, weight: .semibold))
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: AppSpacing.medium) {
+                Button(action: onToggleComplete) {
+                    Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 22, weight: .semibold))
+                }
+                .buttonStyle(.plain)
+                .foregroundColor(task.isCompleted ? AppColor.primaryStrong : AppColor.textSecondary.opacity(0.7))
+
+                VStack(alignment: .leading, spacing: AppSpacing.xSmall) {
+                    Text(task.title)
+                        .font(AppFont.body())
+                        .foregroundColor(task.isCompleted ? AppColor.textSecondary : AppColor.textPrimary)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+                        .strikethrough(task.isCompleted, color: AppColor.textSecondary)
+
+                    Text("record.task.accumulated \(formattedTrackedTime(trackedTime))")
+                        .font(AppFont.caption())
+                        .foregroundColor(task.isCompleted ? AppColor.textSecondary.opacity(0.6) : AppColor.textSecondary)
+                }
+
+                Spacer()
+
+                TagBadge(title: task.categoryTitle ?? task.tag.rawValue, color: task.categoryColor ?? task.tag.color)
+                
+                // Toggle button - always reserve space but only show when selected and has content
+                Button {
+                    if isSelected && (!task.checklist.isEmpty || !task.detail.isEmpty) {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            isExpanded.toggle()
+                        }
+                    }
+                } label: {
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(AppColor.textSecondary)
+                        .frame(width: 24, height: 24)
+                }
+                .buttonStyle(.plain)
+                .opacity(isSelected && (!task.checklist.isEmpty || !task.detail.isEmpty) ? 1 : 0)
+                .disabled(!(isSelected && (!task.checklist.isEmpty || !task.detail.isEmpty)))
             }
-            .buttonStyle(.plain)
-            .foregroundColor(task.isCompleted ? AppColor.primaryStrong : AppColor.textSecondary.opacity(0.7))
-
-            VStack(alignment: .leading, spacing: AppSpacing.xSmall) {
-                Text(task.title)
-                    .font(AppFont.body())
-                    .foregroundColor(task.isCompleted ? AppColor.textSecondary : AppColor.textPrimary)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-                    .strikethrough(task.isCompleted, color: AppColor.textSecondary)
-
-                Text("record.task.accumulated \(formattedTrackedTime(trackedTime))")
-                    .font(AppFont.caption())
-                    .foregroundColor(task.isCompleted ? AppColor.textSecondary.opacity(0.6) : AppColor.textSecondary)
+            .padding(.horizontal, AppSpacing.medium)
+            .padding(.vertical, AppSpacing.smallPlus)
+            
+            // Expanded details section
+            if isSelected && isExpanded && (!task.checklist.isEmpty || !task.detail.isEmpty) {
+                Divider()
+                    .background(AppColor.border)
+                
+                VStack(alignment: .leading, spacing: AppSpacing.small) {
+                    if !task.checklist.isEmpty {
+                        ForEach(task.checklist.indices, id: \.self) { index in
+                            HStack(spacing: AppSpacing.small) {
+                                Button {
+                                    onToggleChecklistItem?(index)
+                                } label: {
+                                    Image(systemName: task.checklist[index].isCompleted ? "checkmark.circle.fill" : "circle")
+                                        .font(.system(size: 18))
+                                        .foregroundColor(task.checklist[index].isCompleted ? AppColor.primary : AppColor.textSecondary)
+                                }
+                                .buttonStyle(.plain)
+                                
+                                Text(task.checklist[index].text)
+                                    .font(AppFont.bodyRegular())
+                                    .foregroundColor(task.checklist[index].isCompleted ? AppColor.textSecondary : AppColor.textPrimary)
+                                    .strikethrough(task.checklist[index].isCompleted)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                
+                                Spacer()
+                            }
+                            .padding(.vertical, 2)
+                        }
+                    } else {
+                        Text(task.detail)
+                            .font(AppFont.bodyRegular())
+                            .foregroundColor(AppColor.textPrimary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.vertical, 4)
+                    }
+                }
+                .padding(.horizontal, AppSpacing.mediumPlus)
+                .padding(.vertical, AppSpacing.medium)
             }
-
-            Spacer()
-
-            TagBadge(title: task.categoryTitle ?? task.tag.rawValue, color: task.categoryColor ?? task.tag.color)
         }
-        .padding(.horizontal, AppSpacing.medium)
-        .padding(.vertical, AppSpacing.smallPlus)
         .background(backgroundColor)
         .overlay(
             RoundedRectangle(cornerRadius: AppRadius.standard)
@@ -408,6 +488,17 @@ private struct TaskCardView: View {
         )
         .cornerRadius(AppRadius.standard)
         .shadow(color: AppShadow.card, radius: AppShadow.radius, x: AppShadow.x, y: AppShadow.y)
+        .onChange(of: isSelected) { oldValue, newValue in
+            // When task becomes selected, automatically expand if it has content
+            if newValue && (!task.checklist.isEmpty || !task.detail.isEmpty) {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    isExpanded = true
+                }
+            } else if !newValue {
+                // When deselected, collapse
+                isExpanded = false
+            }
+        }
     }
 
     private var backgroundColor: Color {
@@ -583,6 +674,12 @@ private struct TaskDropDelegate: DropDelegate {
     }
 }
 
+struct ChecklistItem: Identifiable, Codable {
+    var id = UUID()
+    var text: String
+    var isCompleted: Bool = false
+}
+
 struct TaskItem: Identifiable {
     enum Tag: String {
         case work = "Work"
@@ -618,6 +715,7 @@ struct TaskItem: Identifiable {
     var tag: Tag
     var trackedTime: TimeInterval = 0
     var detail: String = ""
+    var checklist: [ChecklistItem] = []
     var isCompleted: Bool = false
     var categoryTitle: String? = nil
     var categoryColor: Color? = nil
@@ -630,6 +728,7 @@ struct TaskItem: Identifiable {
             tag: tag,
             trackedTime: 0, // Reset tracked time for new instance
             detail: detail,
+            checklist: checklist,
             isCompleted: false, // Reset completion status
             categoryTitle: categoryTitle,
             categoryColor: categoryColor,

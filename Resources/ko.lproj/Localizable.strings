@@ -156,6 +156,7 @@
 "add_task.empty.category" = "이 카테고리에 할 일이 없습니다";
 "add_task.create_new" = "또는 새로운 할 일 만들기";
 "add_task.card.goal %@" = "목표: %@";
+"add_task.card.checklist_preview %d" = "체크리스트 %d개";
 
 /* Report View */
 "report.title" = "주간 리포트";

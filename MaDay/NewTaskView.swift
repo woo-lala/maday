@@ -20,6 +20,15 @@ struct NewTaskView: View {
     @State private var goalHours: Int = 0
     @State private var goalMinutes: Int = 0
     @State private var showGoalTimePicker = false
+    
+    // Description type: text or checklist
+    enum DescriptionType {
+        case text
+        case checklist
+    }
+    @State private var descriptionType: DescriptionType = .text
+    @State private var checklistItems: [ChecklistItem] = []
+    @State private var newChecklistItemText: String = ""
 
     init(tasks: Binding<[TaskItem]>, onTaskCreated: ((TaskItem) -> Void)? = nil, taskToEdit: TaskItem? = nil) {
         self._tasks = tasks
@@ -28,6 +37,15 @@ struct NewTaskView: View {
 
         _newTaskName = State(initialValue: taskToEdit?.title ?? "")
         _newTaskDescription = State(initialValue: taskToEdit?.detail ?? "")
+        
+        // Determine initial description type and content
+        if let existingChecklist = taskToEdit?.checklist, !existingChecklist.isEmpty {
+            _descriptionType = State(initialValue: .checklist)
+            _checklistItems = State(initialValue: existingChecklist)
+        } else {
+            _descriptionType = State(initialValue: .text)
+            _checklistItems = State(initialValue: [])
+        }
         
         // Determine initial category selection
         let initialTag = taskToEdit?.tag ?? .work
@@ -92,12 +110,38 @@ struct NewTaskView: View {
             }
 
             VStack(alignment: .leading, spacing: AppSpacing.small) {
-                Text("new_task.field.desc")
-                    .font(AppFont.callout())
-                    .foregroundColor(AppColor.textSecondary)
-
-                AppTextEditor("new_task.placeholder.desc", text: $newTaskDescription)
-                    .frame(minHeight: 120)
+                HStack {
+                    Text("new_task.field.desc")
+                        .font(AppFont.callout())
+                        .foregroundColor(AppColor.textSecondary)
+                    
+                    Spacer()
+                    
+                    // Type selector for text or checklist
+                    Picker("", selection: $descriptionType) {
+                        Text("Text").tag(DescriptionType.text)
+                        Text("Checklist").tag(DescriptionType.checklist)
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(width: 180)
+                    .onChange(of: descriptionType) { oldValue, newValue in
+                        // Clear the opposite type's data when switching
+                        if newValue == .text {
+                            // Switching to text, clear checklist
+                            checklistItems = []
+                        } else {
+                            // Switching to checklist, clear text description
+                            newTaskDescription = ""
+                        }
+                    }
+                }
+                
+                if descriptionType == .text {
+                    AppTextEditor("new_task.placeholder.desc", text: $newTaskDescription)
+                        .frame(minHeight: 120)
+                } else {
+                    checklistSection
+                }
             }
 
             VStack(alignment: .leading, spacing: AppSpacing.small) {
@@ -317,6 +361,92 @@ struct NewTaskView: View {
         }
     }
 
+    private var checklistSection: some View {
+        let containerBackground = RoundedRectangle(cornerRadius: AppRadius.standard, style: .continuous)
+            .stroke(AppColor.border, lineWidth: 1)
+            .background(
+                RoundedRectangle(cornerRadius: AppRadius.standard, style: .continuous)
+                    .fill(AppColor.background)
+            )
+        
+        return VStack(spacing: AppSpacing.small) {
+            // Display existing checklist items
+            ForEach(checklistItems.indices, id: \.self) { index in
+                checklistItemRow(at: index)
+            }
+            
+            // Add new checklist item
+            addChecklistItemRow
+        }
+        .padding(AppSpacing.small)
+        .background(containerBackground)
+        .frame(minHeight: 120)
+    }
+    
+    private func checklistItemRow(at index: Int) -> some View {
+        let item = checklistItems[index]
+        let itemBackground = RoundedRectangle(cornerRadius: AppRadius.button, style: .continuous)
+            .fill(AppColor.surface)
+        
+        return HStack(spacing: AppSpacing.small) {
+            Button {
+                checklistItems[index].isCompleted.toggle()
+            } label: {
+                Image(systemName: item.isCompleted ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 20))
+                    .foregroundColor(item.isCompleted ? AppColor.primary : AppColor.textSecondary)
+            }
+            .buttonStyle(.plain)
+            
+            Text(item.text)
+                .font(AppFont.bodyRegular())
+                .foregroundColor(item.isCompleted ? AppColor.textSecondary : AppColor.textPrimary)
+                .strikethrough(item.isCompleted)
+            
+            Spacer()
+            
+            Button {
+                checklistItems.remove(at: index)
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 18))
+                    .foregroundColor(AppColor.textSecondary.opacity(0.6))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, AppSpacing.medium)
+        .padding(.vertical, AppSpacing.smallPlus)
+        .background(itemBackground)
+    }
+    
+    private var addChecklistItemRow: some View {
+        let isTextEmpty = newChecklistItemText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let buttonColor = isTextEmpty ? AppColor.textSecondary.opacity(0.5) : AppColor.primary
+        let borderShape = RoundedRectangle(cornerRadius: AppRadius.button, style: .continuous)
+            .stroke(AppColor.border, lineWidth: 1)
+        
+        return HStack(spacing: AppSpacing.small) {
+            AppTextField("Add item...", text: $newChecklistItemText)
+                .onSubmit {
+                    addChecklistItem()
+                }
+            
+            Button {
+                addChecklistItem()
+            } label: {
+                Image(systemName: "plus.circle.fill")
+                    .font(.system(size: 24))
+                    .foregroundColor(buttonColor)
+            }
+            .buttonStyle(.plain)
+            .disabled(isTextEmpty)
+        }
+        .padding(.horizontal, AppSpacing.medium)
+        .padding(.vertical, AppSpacing.smallPlus)
+        .background(borderShape)
+    }
+
+
     private var goalTimeText: String {
         if goalHours == 0 && goalMinutes == 0 {
             return NSLocalizedString("new_task.goal.none", comment: "")
@@ -347,7 +477,8 @@ struct NewTaskView: View {
 
         guard let selectedCategory else { return }
 
-        let details = newTaskDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+        let details = descriptionType == .text ? newTaskDescription.trimmingCharacters(in: .whitespacesAndNewlines) : ""
+        let checklist = descriptionType == .checklist ? checklistItems : []
         
         var goalTime: TimeInterval? = nil
         if goalHours > 0 || goalMinutes > 0 {
@@ -359,6 +490,7 @@ struct NewTaskView: View {
             var updatedTask = tasks[index]
             updatedTask.title = title
             updatedTask.detail = details
+            updatedTask.checklist = checklist
             updatedTask.tag = selectedCategory.tag
             updatedTask.categoryTitle = selectedCategory.name
             updatedTask.categoryColor = selectedCategory.color
@@ -373,6 +505,7 @@ struct NewTaskView: View {
                 tag: selectedCategory.tag,
                 trackedTime: 0,
                 detail: details,
+                checklist: checklist,
                 isCompleted: false,
                 categoryTitle: selectedCategory.name,
                 categoryColor: selectedCategory.color,
@@ -383,6 +516,15 @@ struct NewTaskView: View {
         }
 
         dismiss()
+    }
+    
+    private func addChecklistItem() {
+        let trimmedText = newChecklistItemText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedText.isEmpty else { return }
+        
+        let newItem = ChecklistItem(text: trimmedText, isCompleted: false)
+        checklistItems.append(newItem)
+        newChecklistItemText = ""
     }
 
 

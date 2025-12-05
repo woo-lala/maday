@@ -336,44 +336,92 @@ private struct ExistingTaskCard: View {
     let task: TaskItem
     let indicatorColor: Color
     let isSelected: Bool
+    
+    @State private var isExpanded: Bool = false
 
     var body: some View {
-        HStack(alignment: .top, spacing: AppSpacing.medium) {
-            Circle()
-                .fill(indicatorColor)
-                .frame(width: AppSpacing.medium, height: AppSpacing.medium)
-                .shadow(color: indicatorColor.opacity(0.25), radius: 2, x: 0, y: 1)
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top, spacing: AppSpacing.medium) {
+                Circle()
+                    .fill(indicatorColor)
+                    .frame(width: AppSpacing.medium, height: AppSpacing.medium)
+                    .shadow(color: indicatorColor.opacity(0.25), radius: 2, x: 0, y: 1)
 
-            VStack(alignment: .leading, spacing: AppSpacing.xSmall) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(task.title)
-                        .font(AppFont.heading())
-                        .foregroundColor(AppColor.textPrimary)
-                        .lineLimit(1)
-                    
-                    Spacer()
-                    
-                    if let goal = task.goalTime {
-                        Text("add_task.card.goal \(formattedGoalTime(goal))")
-                            .font(AppFont.caption())
-                            .foregroundColor(AppColor.primary)
-                            .fontWeight(.medium)
-                            .fixedSize(horizontal: true, vertical: false)
+                VStack(alignment: .leading, spacing: AppSpacing.xSmall) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(task.title)
+                            .font(AppFont.body())
+                            .foregroundColor(AppColor.textPrimary)
+                            .lineLimit(1)
+                        
+                        Spacer()
+                        
+                        if let goal = task.goalTime {
+                            Text("add_task.card.goal \(formattedGoalTime(goal))")
+                                .font(AppFont.caption())
+                                .foregroundColor(AppColor.primary)
+                                .fontWeight(.medium)
+                                .fixedSize(horizontal: true, vertical: false)
+                        }
                     }
                 }
-
-                if !task.detail.isEmpty {
-                    Text(task.detail)
-                        .font(AppFont.caption())
+                
+                // Toggle button - always reserve space but only show when has content
+                Button {
+                    if !task.checklist.isEmpty || !task.detail.isEmpty {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            isExpanded.toggle()
+                        }
+                    }
+                } label: {
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(AppColor.textSecondary)
-                        .lineLimit(2)
+                        .frame(width: 24, height: 24)
                 }
+                .buttonStyle(.plain)
+                .opacity(!task.checklist.isEmpty || !task.detail.isEmpty ? 1 : 0)
+                .disabled(task.checklist.isEmpty && task.detail.isEmpty)
             }
-
-
+            .padding(.horizontal, AppSpacing.medium)
+            .padding(.vertical, AppSpacing.smallPlus)
+            
+            // Expanded details section
+            if isExpanded && (!task.checklist.isEmpty || !task.detail.isEmpty) {
+                Divider()
+                    .background(AppColor.border)
+                    .padding(.horizontal, AppSpacing.medium)
+                
+                VStack(alignment: .leading, spacing: AppSpacing.small) {
+                    if !task.checklist.isEmpty {
+                        ForEach(task.checklist.indices, id: \.self) { index in
+                            HStack(spacing: AppSpacing.small) {
+                                Image(systemName: task.checklist[index].isCompleted ? "checkmark.circle.fill" : "circle")
+                                    .font(.system(size: 18))
+                                    .foregroundColor(task.checklist[index].isCompleted ? AppColor.primary : AppColor.textSecondary)
+                                
+                                Text(task.checklist[index].text)
+                                    .font(AppFont.bodyRegular())
+                                    .foregroundColor(task.checklist[index].isCompleted ? AppColor.textSecondary : AppColor.textPrimary)
+                                    .strikethrough(task.checklist[index].isCompleted)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                
+                                Spacer()
+                            }
+                            .padding(.vertical, 2)
+                        }
+                    } else {
+                        Text(task.detail)
+                            .font(AppFont.bodyRegular())
+                            .foregroundColor(AppColor.textPrimary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.vertical, 4)
+                    }
+                }
+                .padding(.horizontal, AppSpacing.mediumPlus)
+                .padding(.vertical, AppSpacing.medium)
+            }
         }
-        .padding(.horizontal, AppSpacing.medium)
-        .padding(.vertical, AppSpacing.smallPlus)
         .background(
             RoundedRectangle(cornerRadius: AppRadius.standard, style: .continuous)
                 .fill(isSelected ? AppColor.primary.opacity(0.12) : AppColor.surface)
@@ -383,6 +431,17 @@ private struct ExistingTaskCard: View {
                 .stroke(isSelected ? AppColor.primary : AppColor.clear, lineWidth: isSelected ? 2 : 0)
         )
         .shadow(color: AppShadow.card, radius: AppShadow.radius, x: AppShadow.x, y: AppShadow.y)
+        .onChange(of: isSelected) { oldValue, newValue in
+            // When task becomes selected, automatically expand if it has content
+            if newValue && (!task.checklist.isEmpty || !task.detail.isEmpty) {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    isExpanded = true
+                }
+            } else if !newValue {
+                // When deselected, collapse
+                isExpanded = false
+            }
+        }
     }
     
     private func formattedGoalTime(_ time: TimeInterval) -> String {
