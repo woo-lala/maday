@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreData
+import Combine
 
 struct AddTaskView: View {
     @Environment(\.dismiss) private var dismiss
@@ -15,6 +16,7 @@ struct AddTaskView: View {
     // Core Data State
     @State private var taskEntities: [TaskEntity] = []
     @State private var editingEntity: TaskEntity?
+    @State private var contextSaveSubscription: AnyCancellable?
     
     var body: some View {
         NavigationStack {
@@ -38,12 +40,33 @@ struct AddTaskView: View {
             .navigationBarTitleDisplayMode(.inline)
             .onAppear {
                 taskEntities = CoreDataManager.shared.fetchTasks()
+                // Refresh when Core Data saves (e.g., after creating a new task)
+                contextSaveSubscription = NotificationCenter.default.publisher(for: .NSManagedObjectContextDidSave)
+                    .receive(on: RunLoop.main)
+                    .sink { _ in
+                        taskEntities = CoreDataManager.shared.fetchTasks()
+                    }
+            }
+            .onDisappear {
+                contextSaveSubscription?.cancel()
             }
             .sheet(item: $editingEntity) { entity in
                 // Placeholder for Edit View
                 Text("Edit Task Placeholder")
             }
         }
+    }
+
+    private var createNewLink: some View {
+        NavigationLink {
+            NewTaskView(tasks: .constant([]))
+        } label: {
+            Text("add_task.create_new")
+                .font(AppFont.caption())
+                .foregroundColor(AppColor.primary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.top, AppSpacing.medium)
     }
 
     private var existingTasksSection: some View {
@@ -82,14 +105,7 @@ struct AddTaskView: View {
                 }
             }
             
-            NavigationLink {
-                NewTaskView(tasks: .constant([]))
-            } label: {
-                Text("add_task.create_new")
-                    .font(AppFont.caption())
-                    .foregroundColor(AppColor.primary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
+            createNewLink
         }
     }
 
@@ -142,6 +158,7 @@ private struct ExistingTaskCard: View {
     let isSelected: Bool
     
     @State private var isExpanded: Bool = false
+    @State private var showDescription: Bool = false
     
     var title: String { entity.title ?? "" }
     var color: Color { 
@@ -152,6 +169,7 @@ private struct ExistingTaskCard: View {
     }
     var checkList: [String] { entity.defaultChecklist ?? [] }
     var goalTime: Int64 { entity.defaultGoalTime }
+    var descriptionText: String { entity.descriptionText ?? "" }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -179,21 +197,31 @@ private struct ExistingTaskCard: View {
                     }
                 }
                 
-                Button {
-                    if !checkList.isEmpty {
+                if !checkList.isEmpty {
+                    Button {
                         withAnimation(.easeInOut(duration: 0.2)) {
                             isExpanded.toggle()
                         }
+                    } label: {
+                        Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(AppColor.textSecondary)
+                            .frame(width: 24, height: 24)
                     }
-                } label: {
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(AppColor.textSecondary)
-                        .frame(width: 24, height: 24)
+                    .buttonStyle(.plain)
+                } else if !descriptionText.isEmpty {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            showDescription.toggle()
+                        }
+                    } label: {
+                        Image(systemName: showDescription ? "chevron.up" : "chevron.down")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(AppColor.textSecondary)
+                            .frame(width: 24, height: 24)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
-                .opacity(!checkList.isEmpty ? 1 : 0)
-                .disabled(checkList.isEmpty)
             }
             .padding(.horizontal, AppSpacing.medium)
             .padding(.vertical, AppSpacing.smallPlus)
@@ -221,6 +249,18 @@ private struct ExistingTaskCard: View {
                 }
                 .padding(.horizontal, AppSpacing.mediumPlus)
                 .padding(.vertical, AppSpacing.medium)
+            }
+            
+            if showDescription && !descriptionText.isEmpty && checkList.isEmpty {
+                Divider()
+                    .background(AppColor.border)
+                    .padding(.horizontal, AppSpacing.medium)
+                
+                Text(descriptionText)
+                    .font(AppFont.bodyRegular())
+                    .foregroundColor(AppColor.textPrimary)
+                    .padding(.horizontal, AppSpacing.mediumPlus)
+                    .padding(.vertical, AppSpacing.medium)
             }
         }
         .background(

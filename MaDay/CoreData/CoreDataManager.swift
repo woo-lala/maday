@@ -16,7 +16,8 @@ class CoreDataManager {
                    categoryId: UUID?, 
                    defaultGoalTime: Int64, 
                    defaultChecklist: [String]?, 
-                   color: String?) -> TaskEntity {
+                   color: String?,
+                   descriptionText: String? = nil) -> TaskEntity {
         let task = TaskEntity(context: context)
         task.id = UUID()
         task.title = title
@@ -24,6 +25,7 @@ class CoreDataManager {
         task.defaultGoalTime = defaultGoalTime
         task.defaultChecklist = defaultChecklist
         task.color = color
+        task.descriptionText = descriptionText
         task.createdAt = Date()
         task.updatedAt = Date()
         
@@ -36,7 +38,17 @@ class CoreDataManager {
         request.sortDescriptors = [NSSortDescriptor(key: "createdAt", ascending: true)]
         
         do {
-            return try context.fetch(request)
+            let results = try context.fetch(request)
+            // Ensure all tasks have stable IDs for selection/UI
+            var needsSave = false
+            results.forEach { task in
+                if task.id == nil {
+                    task.id = UUID()
+                    needsSave = true
+                }
+            }
+            if needsSave { saveContext() }
+            return results
         } catch {
             print("Error fetching tasks: \(error.localizedDescription)")
             return []
@@ -48,12 +60,14 @@ class CoreDataManager {
                    categoryId: UUID? = nil,
                    defaultGoalTime: Int64? = nil, 
                    defaultChecklist: [String]? = nil,
-                   color: String? = nil) {
+                   color: String? = nil,
+                   descriptionText: String? = nil) {
         if let title = title { task.title = title }
         if let categoryId = categoryId { task.categoryId = categoryId }
         if let defaultGoalTime = defaultGoalTime { task.defaultGoalTime = defaultGoalTime }
         if let defaultChecklist = defaultChecklist { task.defaultChecklist = defaultChecklist }
         if let color = color { task.color = color }
+        if let descriptionText = descriptionText { task.descriptionText = descriptionText }
         task.updatedAt = Date()
         
         saveContext()
@@ -78,7 +92,7 @@ class CoreDataManager {
         dailyTask.realTime = 0
         dailyTask.isCompleted = false
         dailyTask.priority = 0
-        dailyTask.memo = ""
+        dailyTask.descriptionText = template.descriptionText ?? ""
         
         // Relationship
         dailyTask.task = template
@@ -124,12 +138,12 @@ class CoreDataManager {
                         realTime: Int64? = nil,
                         isCompleted: Bool? = nil,
                         checklistState: [Bool]? = nil,
-                        memo: String? = nil,
+                        descriptionText: String? = nil,
                         priority: Int16? = nil) {
         if let realTime = realTime { dailyTask.realTime = realTime }
         if let isCompleted = isCompleted { dailyTask.isCompleted = isCompleted }
         if let checklistState = checklistState { dailyTask.checklistState = checklistState }
-        if let memo = memo { dailyTask.memo = memo }
+        if let descriptionText = descriptionText { dailyTask.descriptionText = descriptionText }
         if let priority = priority { dailyTask.priority = priority }
         
         dailyTask.updatedAt = Date()

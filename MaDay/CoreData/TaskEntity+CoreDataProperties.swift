@@ -13,6 +13,7 @@ extension TaskEntity {
     @NSManaged public var createdAt: Date?
     @NSManaged public var defaultChecklist: [String]?
     @NSManaged public var defaultGoalTime: Int64
+    @NSManaged public var descriptionText: String?
     @NSManaged public var id: UUID?
     @NSManaged public var title: String?
     @NSManaged public var updatedAt: Date?

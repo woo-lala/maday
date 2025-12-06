@@ -381,15 +381,17 @@ struct NewTaskView: View {
         guard !title.isEmpty else { return }
         guard let selectedCategory else { return }
 
-        // Core Data Integration: Convert checklist to String array. Note: Template doesn't store completion state.
+        // Core Data Integration: Persist either text OR checklist (most recent mode only).
         var finalChecklist: [String] = []
+        var descriptionText: String? = nil
         if descriptionType == .text {
-             let text = newTaskDescription.trimmingCharacters(in: .whitespacesAndNewlines)
-             if !text.isEmpty {
-                 finalChecklist = [text]
-             }
+            let text = newTaskDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !text.isEmpty {
+                descriptionText = text
+            }
         } else {
-             finalChecklist = checklistItems.map { $0.text }
+            finalChecklist = checklistItems.map { $0.text }
+            descriptionText = nil
         }
 
         let totalSeconds = Int64(goalHours * 3600 + goalMinutes * 60)
@@ -401,7 +403,8 @@ struct NewTaskView: View {
             categoryId: UUID(), // Placeholder
             defaultGoalTime: totalSeconds,
             defaultChecklist: finalChecklist,
-            color: colorHex
+            color: colorHex,
+            descriptionText: descriptionText
         )
 
         dismiss()
