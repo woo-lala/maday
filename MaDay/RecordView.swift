@@ -1,13 +1,13 @@
 import SwiftUI
 import Combine
 import UniformTypeIdentifiers
+import CoreData
 
 struct RecordView: View {
     var showsTabBar: Bool = false
     var onSelectTab: ((TabItem) -> Void)? = nil
 
-    @State private var tasks: [TaskItem]
-    @State private var taskLibrary: [TaskItem]
+    @State private var dailyTasks: [DailyTaskEntity] = []
     @State private var selectedTaskID: UUID?
     @State private var activeTaskID: UUID?
     @State private var isTimerRunning = false
@@ -18,48 +18,19 @@ struct RecordView: View {
     @State private var goalPromptedTaskID: UUID?
     @State private var goalAcknowledgedTaskID: UUID?
     @State private var goalDismissedTaskIDs: Set<UUID> = []
-    @State private var editingTask: TaskItem?
-    @State private var draggingTask: TaskItem?
+    @State private var editingTask: DailyTaskEntity?
+    @State private var draggingTask: DailyTaskEntity?
     @State private var localTabSelection: TabItem = .home
+    @State private var contextSaveSubscription: AnyCancellable?
 
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
-    init(showsTabBar: Bool = false, onSelectTab: ((TabItem) -> Void)? = nil) {
-        self.showsTabBar = showsTabBar
-        self.onSelectTab = onSelectTab
-
-        // Task library - these are templates
-        let libraryTasks: [TaskItem] = [
-            TaskItem(title: "Work on Project Dayflow", tag: .work, detail: "Finalize sprint backlog and sync with design", categoryTitle: "Work", categoryColor: TaskItem.Tag.work.color),
-            TaskItem(title: "Read Atomic Habits", tag: .personal, detail: "Read 20 pages before bed", categoryTitle: "Personal", categoryColor: TaskItem.Tag.personal.color),
-            TaskItem(title: "30 min HIIT Session", tag: .fitness, detail: "Power session from the Daily Burn plan", categoryTitle: "Fitness", categoryColor: TaskItem.Tag.fitness.color, goalTime: 60),
-            TaskItem(title: "Review YouTube Analytics", tag: .work, detail: "Check watch time and retention charts", categoryTitle: "Work", categoryColor: TaskItem.Tag.work.color),
-            TaskItem(title: "Deep Work Session", tag: .work, 
-                    checklist: [
-                        ChecklistItem(text: "Review PR requests", isCompleted: true),
-                        ChecklistItem(text: "Complete backend API", isCompleted: false),
-                        ChecklistItem(text: "Write unit tests", isCompleted: false),
-                        ChecklistItem(text: "Update documentation", isCompleted: false)
-                    ],
-                    categoryTitle: "Work", categoryColor: TaskItem.Tag.work.color, goalTime: 5400),
-            TaskItem(title: "Quick Jog", tag: .fitness, detail: "Morning cardio", categoryTitle: "Fitness", categoryColor: TaskItem.Tag.fitness.color, goalTime: 1800),
-            TaskItem(title: "Meditation", tag: .personal, detail: "Clear mind", categoryTitle: "Personal", categoryColor: TaskItem.Tag.personal.color, goalTime: 300)
-        ]
-        
-        // Today's tasks - start with copies of some library tasks as examples
-        let todayTasks: [TaskItem] = [
-            libraryTasks[0].copy(),
-            libraryTasks[4].copy(), // Deep Work Session with checklist
-            libraryTasks[2].copy()
-        ]
-        
-        _taskLibrary = State(initialValue: libraryTasks)
-        _tasks = State(initialValue: todayTasks)
-        _selectedTaskID = State(initialValue: todayTasks.first?.id)
+    private var tasks: [TaskDisplay] {
+        dailyTasks.compactMap { TaskDisplay(entity: $0) }
     }
 
     private var totalTrackedTime: TimeInterval {
-        tasks.reduce(0) { $0 + $1.trackedTime }
+        dailyTasks.reduce(0) { $0 + TimeInterval($1.realTime) }
     }
 
     var body: some View {
@@ -89,10 +60,14 @@ struct RecordView: View {
             .navigationDestination(isPresented: $showAddTask) {
                 addTaskDestination
             }
-            .sheet(item: $editingTask) { task in
-                NavigationStack {
-                    NewTaskView(tasks: $tasks, taskToEdit: task)
-                }
+            .onAppear {
+                fetchTodayTasks()
+                contextSaveSubscription = NotificationCenter.default.publisher(for: .NSManagedObjectContextDidSave)
+                    .receive(on: RunLoop.main)
+                    .sink { _ in fetchTodayTasks() }
+            }
+            .onDisappear {
+                contextSaveSubscription?.cancel()
             }
         }
         .onReceive(timer) { date in
@@ -143,38 +118,26 @@ struct RecordView: View {
                             isActive: activeTaskID == task.id,
                             trackedTime: task.trackedTime,
                             onToggleComplete: { toggleCompletion(for: task.id) },
-                            onToggleChecklistItem: { index in
-                                toggleChecklistItem(taskId: task.id, itemIndex: index)
-                            }
+                            onToggleChecklistItem: nil
                         )
                     }
                     .buttonStyle(.plain)
                     .contextMenu {
-                        Button {
-                            editingTask = task
-                        } label: {
-                            Label("common.edit", systemImage: "pencil")
-                        }
-                        
                         Button(role: .destructive) {
-                            deleteTask(task)
+                            deleteTask(id: task.id)
                         } label: {
                             Label("common.delete", systemImage: "trash")
                         }
                     }
-                    .onDrag {
-                        draggingTask = task
-                        return NSItemProvider(object: task.id.uuidString as NSString)
-                    }
-                    .onDrop(of: [UTType.text], delegate: TaskDropDelegate(target: task, tasks: $tasks, draggingTask: $draggingTask))
                 }
             }
         }
     }
 
     private var addTaskDestination: some View {
-        AddTaskView(tasks: $tasks, taskLibrary: $taskLibrary) { newTask in
-            selectedTaskID = newTask.id
+        AddTaskView(tasks: .constant([]), taskLibrary: .constant([])) { _ in
+            fetchTodayTasks()
+            selectedTaskID = dailyTasks.first?.id
             activeTaskID = nil
             sessionElapsed = 0
             isTimerRunning = false
@@ -203,14 +166,6 @@ struct RecordView: View {
         .sectionCardStyle()
     }
     
-    private func toggleChecklistItem(taskId: UUID, itemIndex: Int) {
-        guard let taskIndex = tasks.firstIndex(where: { $0.id == taskId }) else { return }
-        guard itemIndex < tasks[taskIndex].checklist.count else { return }
-        tasks[taskIndex].checklist[itemIndex].isCompleted.toggle()
-    }
-
-
-
     private var timerControls: some View {
         TimerControlView(
             onStart: startTimer,
@@ -338,17 +293,26 @@ struct RecordView: View {
         }
 
         sessionElapsed += delta
-        updateTask(with: activeID) { item in
-            item.trackedTime += delta
+        if let task = dailyTasks.first(where: { $0.id == activeID }) {
+            let newTimeDouble = Double(task.realTime) + delta
+            let newTime = Int64(newTimeDouble.rounded())
+            task.realTime = newTime
+            updateDailyTask(with: activeID, realTime: newTime)
         }
         checkGoal(for: activeID)
         lastTickDate = currentDate
     }
 
-    private func updateTask(with id: UUID, mutate: (inout TaskItem) -> Void) {
-        guard let index = tasks.firstIndex(where: { $0.id == id }) else { return }
-        mutate(&tasks[index])
-    }
+private func updateDailyTask(with id: UUID, realTime: Int64? = nil, isCompleted: Bool? = nil, checklistState: [Bool]? = nil) {
+    guard let index = dailyTasks.firstIndex(where: { $0.id == id }) else { return }
+    let task = dailyTasks[index]
+    CoreDataManager.shared.updateDailyTask(task,
+                                           realTime: realTime,
+                                           isCompleted: isCompleted,
+                                           checklistState: checklistState ?? task.checklistState,
+                                           descriptionText: task.descriptionText,
+                                           priority: task.priority)
+}
     
     private func checkGoal(for id: UUID) {
         guard !showGoalDialog,
@@ -366,26 +330,92 @@ struct RecordView: View {
     }
 
     private func toggleCompletion(for id: UUID) {
-        updateTask(with: id) { item in
-            item.isCompleted.toggle()
+        if let task = dailyTasks.first(where: { $0.id == id }) {
+            let newValue = !task.isCompleted
+            task.isCompleted = newValue
+            updateDailyTask(with: id, isCompleted: newValue)
         }
     }
 
-    private func deleteTask(_ task: TaskItem) {
-        if activeTaskID == task.id {
+    private func deleteTask(id: UUID) {
+        if activeTaskID == id {
             stopTimer()
         }
-        if selectedTaskID == task.id {
+        if selectedTaskID == id {
             selectedTaskID = nil
         }
-        if let index = tasks.firstIndex(where: { $0.id == task.id }) {
-            tasks.remove(at: index)
+        if let entity = dailyTasks.first(where: { $0.id == id }) {
+            CoreDataManager.shared.deleteDailyTask(entity)
+        }
+        fetchTodayTasks()
+    }
+    
+    private func toggleChecklistItem(taskId: UUID, itemIndex: Int) {
+        guard let index = dailyTasks.firstIndex(where: { $0.id == taskId }) else { return }
+        let entity = dailyTasks[index]
+        let texts = entity.task?.defaultChecklist ?? []
+        guard itemIndex < texts.count else { return }
+        var states = entity.checklistState ?? Array(repeating: false, count: texts.count)
+        if itemIndex < states.count {
+            states[itemIndex].toggle()
+        } else {
+            // pad if lengths mismatch
+            states = texts.enumerated().map { idx, _ in
+                idx == itemIndex ? true : (states.indices.contains(idx) ? states[idx] : false)
+            }
+        }
+        entity.checklistState = states
+        updateDailyTask(with: taskId, checklistState: states)
+    }
+    
+    private func fetchTodayTasks() {
+        dailyTasks = CoreDataManager.shared.fetchDailyTasks(for: Date())
+        if let selected = selectedTaskID, !dailyTasks.contains(where: { $0.id == selected }) {
+            selectedTaskID = dailyTasks.first?.id
+        } else if selectedTaskID == nil {
+            selectedTaskID = dailyTasks.first?.id
         }
     }
 }
 
+private struct TaskDisplay: Identifiable {
+    let id: UUID
+    let title: String
+    let detail: String
+    let checklist: [ChecklistItem]
+    let isCompleted: Bool
+    let categoryTitle: String?
+    let categoryColor: Color?
+    let goalTime: TimeInterval?
+    let trackedTime: TimeInterval
+    let tag: TaskItem.Tag
+    
+    init?(entity: DailyTaskEntity) {
+        guard let id = entity.id else { return nil }
+        self.id = id
+        self.title = entity.task?.title ?? entity.descriptionText ?? "Untitled"
+        self.detail = entity.descriptionText ?? ""
+        let texts = entity.task?.defaultChecklist ?? []
+        let states = entity.checklistState ?? Array(repeating: false, count: texts.count)
+        self.checklist = texts.enumerated().map { idx, text in
+            ChecklistItem(id: UUID(), text: text, isCompleted: states.indices.contains(idx) ? states[idx] : false)
+        }
+        self.isCompleted = entity.isCompleted
+        self.categoryTitle = entity.task?.title
+        if let hex = entity.task?.color {
+            self.categoryColor = Color(hex: hex)
+        } else {
+            self.categoryColor = nil
+        }
+        let goalSeconds = entity.goalTime
+        self.goalTime = goalSeconds > 0 ? TimeInterval(goalSeconds) : nil
+        self.trackedTime = TimeInterval(entity.realTime)
+        self.tag = .work
+    }
+}
+
 private struct TaskCardView: View {
-    let task: TaskItem
+    let task: TaskDisplay
     let isSelected: Bool
     let isActive: Bool
     let trackedTime: TimeInterval
@@ -641,36 +671,6 @@ private struct TimerControlView: View {
             .disabled(!canStop)
             .opacity(canStop ? 1 : 0.5)
         }
-    }
-}
-
-private struct TaskDropDelegate: DropDelegate {
-    let target: TaskItem
-    @Binding var tasks: [TaskItem]
-    @Binding var draggingTask: TaskItem?
-
-    func validateDrop(info: DropInfo) -> Bool {
-        info.hasItemsConforming(to: [UTType.text])
-    }
-
-    func dropEntered(info: DropInfo) {
-        guard let draggingTask, draggingTask.id != target.id else { return }
-        if let fromIndex = tasks.firstIndex(where: { $0.id == draggingTask.id }),
-           let toIndex = tasks.firstIndex(where: { $0.id == target.id }) {
-            withAnimation(.easeInOut(duration: 0.15)) {
-                let item = tasks.remove(at: fromIndex)
-                tasks.insert(item, at: toIndex)
-            }
-        }
-    }
-
-    func dropUpdated(info: DropInfo) -> DropProposal? {
-        DropProposal(operation: .move)
-    }
-
-    func performDrop(info: DropInfo) -> Bool {
-        draggingTask = nil
-        return true
     }
 }
 

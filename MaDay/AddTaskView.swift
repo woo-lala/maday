@@ -138,9 +138,20 @@ struct AddTaskView: View {
 
     private func addSelectedTask() {
         guard !selectedTaskIDs.isEmpty else { return }
-        // TODO: Implement adding to Daily Tasks
-        print("Selected Task IDs to add: \(selectedTaskIDs)")
+        let selectedEntities = taskEntities.filter { entity in
+            if let id = entity.id {
+                return selectedTaskIDs.contains(id)
+            }
+            return false
+        }
+        
+        let today = Date()
+        selectedEntities.forEach { template in
+            _ = CoreDataManager.shared.createDailyTask(from: template, date: today)
+        }
+
         selectedTaskIDs.removeAll()
+        taskEntities = CoreDataManager.shared.fetchTasks()
         dismiss()
     }
 
