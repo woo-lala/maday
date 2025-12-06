@@ -20,8 +20,6 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		2F507F6C2EADEB8600749D60 /* MaDay */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = MaDay;
 			sourceTree = "<group>";
 		};
@@ -44,7 +42,6 @@
 				63AE3DDDA1392FCD708A903C /* Localizable.strings */,
 				47742BE7F58ACDF224C9CFDE /* Localizable.strings */,
 			);
-			name = Resources;
 			path = Resources;
 			sourceTree = "<group>";
 		};
