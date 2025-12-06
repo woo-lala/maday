@@ -44,10 +44,10 @@ struct AppButton<Label: View>: View {
 }
 
 struct AppTextField: View {
-    let placeholder: String
+    let placeholder: LocalizedStringKey
     @Binding var text: String
 
-    init(_ placeholder: String, text: Binding<String>) {
+    init(_ placeholder: LocalizedStringKey, text: Binding<String>) {
         self.placeholder = placeholder
         self._text = text
     }
@@ -61,10 +61,10 @@ struct AppTextField: View {
 }
 
 struct AppTextEditor: View {
-    let placeholder: String
+    let placeholder: LocalizedStringKey
     @Binding var text: String
 
-    init(_ placeholder: String, text: Binding<String>) {
+    init(_ placeholder: LocalizedStringKey, text: Binding<String>) {
         self.placeholder = placeholder
         self._text = text
     }

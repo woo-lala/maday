@@ -9,7 +9,7 @@ struct AddTaskView: View {
 
     @State private var filterExpanded = false
     @State private var selectedFilter: TaskCategoryFilter = .all
-    @State private var selectedTaskID: UUID?
+    @State private var selectedTaskIDs: Set<UUID> = []
     @State private var editingTask: TaskItem?
     
     var body: some View {
@@ -136,7 +136,7 @@ struct AddTaskView: View {
                                     ExistingTaskCard(
                                         task: task,
                                         indicatorColor: category.color,
-                                        isSelected: selectedTaskID == task.id
+                                        isSelected: selectedTaskIDs.contains(task.id)
                                     )
                                 }
                                 .buttonStyle(.plain)
@@ -165,7 +165,7 @@ struct AddTaskView: View {
             NavigationLink {
                 NewTaskView(tasks: $taskLibrary, onTaskCreated: { newTask in
                     // When a new task is created in library, select it in AddTaskView so user can add it
-                    selectedTaskID = newTask.id
+                    toggleSelection(for: newTask.id)
                 })
             } label: {
                 Text("add_task.create_new")
@@ -183,8 +183,8 @@ struct AddTaskView: View {
             } label: {
                 Text("common.add")
             }
-            .disabled(selectedTaskID == nil)
-            .opacity(selectedTaskID == nil ? 0.6 : 1)
+            .disabled(selectedTaskIDs.isEmpty)
+            .opacity(selectedTaskIDs.isEmpty ? 0.6 : 1)
 
             AppColor.clear
                 .frame(height: AppSpacing.xSmall)
@@ -211,23 +211,25 @@ struct AddTaskView: View {
     }
 
     private func toggleSelection(for id: UUID) {
-        if selectedTaskID == id {
-            selectedTaskID = nil
+        if selectedTaskIDs.contains(id) {
+            selectedTaskIDs.remove(id)
         } else {
-            selectedTaskID = id
+            selectedTaskIDs.insert(id)
         }
     }
 
     private func addSelectedTask() {
-        guard let selectedID = selectedTaskID,
-              let template = taskLibrary.first(where: { $0.id == selectedID }) else {
-            return
-        }
+        guard !selectedTaskIDs.isEmpty else { return }
 
-        let newTask = template.copy()
-        tasks.append(newTask)
-        onTaskCreated?(newTask)
-        selectedTaskID = nil
+        for id in selectedTaskIDs {
+             if let template = taskLibrary.first(where: { $0.id == id }) {
+                let newTask = template.copy()
+                tasks.append(newTask)
+                onTaskCreated?(newTask)
+            }
+        }
+        
+        selectedTaskIDs.removeAll()
         dismiss()
     }
 
@@ -235,8 +237,8 @@ struct AddTaskView: View {
         if let index = taskLibrary.firstIndex(where: { $0.id == task.id }) {
             taskLibrary.remove(at: index)
         }
-        if selectedTaskID == task.id {
-            selectedTaskID = nil
+        if selectedTaskIDs.contains(task.id) {
+            selectedTaskIDs.remove(task.id)
         }
     }
 }
@@ -431,17 +433,7 @@ private struct ExistingTaskCard: View {
                 .stroke(isSelected ? AppColor.primary : AppColor.clear, lineWidth: isSelected ? 2 : 0)
         )
         .shadow(color: AppShadow.card, radius: AppShadow.radius, x: AppShadow.x, y: AppShadow.y)
-        .onChange(of: isSelected) { oldValue, newValue in
-            // When task becomes selected, automatically expand if it has content
-            if newValue && (!task.checklist.isEmpty || !task.detail.isEmpty) {
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    isExpanded = true
-                }
-            } else if !newValue {
-                // When deselected, collapse
-                isExpanded = false
-            }
-        }
+
     }
     
     private func formattedGoalTime(_ time: TimeInterval) -> String {
