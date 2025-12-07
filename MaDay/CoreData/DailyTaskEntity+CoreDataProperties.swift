@@ -18,6 +18,8 @@ extension DailyTaskEntity {
     @NSManaged public var order: Int16
     @NSManaged public var priority: Int16
     @NSManaged public var realTime: Int64
+    @NSManaged public var title: String?
+    @NSManaged public var usesChecklist: Bool
     @NSManaged public var updatedAt: Date?
     @NSManaged public var task: TaskEntity?
 }

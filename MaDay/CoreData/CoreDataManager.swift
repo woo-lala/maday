@@ -17,7 +17,8 @@ class CoreDataManager {
                    defaultGoalTime: Int64, 
                    defaultChecklist: [String]?, 
                    color: String?,
-                   descriptionText: String? = nil) -> TaskEntity {
+                   descriptionText: String? = nil,
+                   usesChecklist: Bool = false) -> TaskEntity {
         let task = TaskEntity(context: context)
         task.id = UUID()
         task.title = title
@@ -28,6 +29,7 @@ class CoreDataManager {
         task.descriptionText = descriptionText
         task.createdAt = Date()
         task.updatedAt = Date()
+        task.usesChecklist = usesChecklist
         
         saveContext()
         return task
@@ -61,13 +63,15 @@ class CoreDataManager {
                    defaultGoalTime: Int64? = nil, 
                    defaultChecklist: [String]? = nil,
                    color: String? = nil,
-                   descriptionText: String? = nil) {
+                   descriptionText: String? = nil,
+                   usesChecklist: Bool? = nil) {
         if let title = title { task.title = title }
         if let category = category { task.category = category }
         if let defaultGoalTime = defaultGoalTime { task.defaultGoalTime = defaultGoalTime }
         if let defaultChecklist = defaultChecklist { task.defaultChecklist = defaultChecklist }
         if let color = color { task.color = color }
         if let descriptionText = descriptionText { task.descriptionText = descriptionText }
+        if let usesChecklist = usesChecklist { task.usesChecklist = usesChecklist }
         task.updatedAt = Date()
         
         saveContext()
@@ -87,6 +91,9 @@ class CoreDataManager {
         dailyTask.createdAt = Date()
         dailyTask.updatedAt = Date()
         dailyTask.order = order
+        dailyTask.title = template.title
+        let templateChecklist = template.defaultChecklist ?? []
+        dailyTask.usesChecklist = template.usesChecklist ? true : !templateChecklist.isEmpty
         
         // Snapshot: Copy values from template
         dailyTask.goalTime = template.defaultGoalTime
@@ -129,7 +136,16 @@ class CoreDataManager {
         ]
         
         do {
-            return try context.fetch(request)
+            let results = try context.fetch(request)
+            var needsSave = false
+            results.forEach { daily in
+                if daily.id == nil {
+                    daily.id = UUID()
+                    needsSave = true
+                }
+            }
+            if needsSave { saveContext() }
+            return results
         } catch {
             print("Error fetching daily tasks: \(error.localizedDescription)")
             return []
@@ -140,12 +156,14 @@ class CoreDataManager {
                         realTime: Int64? = nil,
                         isCompleted: Bool? = nil,
                         checklistState: [Bool]? = nil,
-                        checklistTexts: [String]? = nil,
-                        descriptionText: String? = nil,
-                        priority: Int16? = nil,
-                        goalTime: Int64? = nil,
-                        categoryId: UUID? = nil,
-                        order: Int16? = nil) {
+                       checklistTexts: [String]? = nil,
+                       descriptionText: String? = nil,
+                       priority: Int16? = nil,
+                       goalTime: Int64? = nil,
+                       categoryId: UUID? = nil,
+                       order: Int16? = nil,
+                        title: String? = nil,
+                        usesChecklist: Bool? = nil) {
         if let realTime = realTime { dailyTask.realTime = realTime }
         if let isCompleted = isCompleted { dailyTask.isCompleted = isCompleted }
         if let checklistState = checklistState { dailyTask.checklistState = checklistState }
@@ -155,6 +173,8 @@ class CoreDataManager {
         if let goalTime = goalTime { dailyTask.goalTime = goalTime }
         if let categoryId = categoryId { dailyTask.categoryId = categoryId }
         if let order = order { dailyTask.order = order }
+        if let title = title { dailyTask.title = title }
+        if let usesChecklist = usesChecklist { dailyTask.usesChecklist = usesChecklist }
         
         dailyTask.updatedAt = Date()
         saveContext()

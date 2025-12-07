@@ -31,7 +31,7 @@ struct EditDailyTaskView: View {
         self.dailyTask = dailyTask
         self.onSaved = onSaved
         
-        _taskTitle = State(initialValue: dailyTask.task?.title ?? "Untitled")
+        _taskTitle = State(initialValue: dailyTask.title ?? dailyTask.task?.title ?? "Untitled")
         _newTaskDescription = State(initialValue: dailyTask.descriptionText ?? "")
         
         let texts = dailyTask.checklistTexts ?? dailyTask.task?.defaultChecklist ?? []
@@ -40,7 +40,7 @@ struct EditDailyTaskView: View {
             let items: [ChecklistItem] = texts.enumerated().map { idx, text in
                 ChecklistItem(text: text, isCompleted: states.indices.contains(idx) ? states[idx] : false)
             }
-            _descriptionType = State(initialValue: .checklist)
+            _descriptionType = State(initialValue: dailyTask.usesChecklist ? .checklist : .text)
             _checklistItems = State(initialValue: items)
         } else {
             _descriptionType = State(initialValue: .text)
@@ -85,7 +85,7 @@ struct EditDailyTaskView: View {
                     .foregroundColor(AppColor.textSecondary)
 
                 AppTextField("new_task.placeholder.name", text: $taskTitle)
-                    .disabled(true)
+                    .disabled(false)
             }
 
             VStack(alignment: .leading, spacing: AppSpacing.small) {
@@ -102,21 +102,14 @@ struct EditDailyTaskView: View {
                     }
                     .pickerStyle(.segmented)
                     .frame(width: 180)
-                    .onChange(of: descriptionType) { _, newValue in
-                        if newValue == .text {
-                            checklistItems = checklistItems.enumerated().map { idx, item in
-                                ChecklistItem(id: item.id, text: item.text, isCompleted: dailyTask.checklistState?.indices.contains(idx) == true ? dailyTask.checklistState?[idx] ?? false : item.isCompleted)
-                            }
-                        }
-                    }
                 }
                 
-                if descriptionType == .text {
-                    AppTextEditor("new_task.placeholder.desc", text: $newTaskDescription)
-                        .frame(minHeight: 120)
-                } else {
-                    checklistSection
-                }
+        if descriptionType == .text {
+            AppTextEditor("new_task.placeholder.desc", text: $newTaskDescription)
+                .frame(minHeight: 120)
+        } else {
+            checklistSection
+        }
             }
 
             VStack(alignment: .leading, spacing: AppSpacing.small) {
@@ -462,46 +455,36 @@ struct EditDailyTaskView: View {
         let totalSeconds = Int64(goalHours * 3600 + goalMinutes * 60)
         let finalChecklistState: [Bool]
         let finalChecklistTexts: [String]
-        if descriptionType == .checklist {
-            finalChecklistState = checklistItems.map { $0.isCompleted }
-            finalChecklistTexts = checklistItems.map { $0.text }
-        } else {
-            finalChecklistState = dailyTask.checklistState ?? []
-            finalChecklistTexts = dailyTask.checklistTexts ?? []
-        }
+        finalChecklistState = checklistItems.map { $0.isCompleted }
+        finalChecklistTexts = checklistItems.map { $0.text }
         
         var finalDescription: String? = nil
-        if descriptionType == .text {
-            let text = newTaskDescription.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !text.isEmpty { finalDescription = text }
-        } else {
-            finalDescription = dailyTask.descriptionText
+        let text = newTaskDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+        finalDescription = text.isEmpty ? nil : text
+        
+        let trimmedTitle = taskTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        let finalTitle = trimmedTitle.isEmpty ? (dailyTask.title ?? dailyTask.task?.title ?? "Untitled") : trimmedTitle
+        
+        let updateBlock: (_ categoryId: UUID?) -> Void = { catId in
+            CoreDataManager.shared.updateDailyTask(
+                dailyTask,
+                realTime: dailyTask.realTime,
+                isCompleted: dailyTask.isCompleted,
+                checklistState: finalChecklistState,
+                checklistTexts: finalChecklistTexts,
+                descriptionText: finalDescription,
+                priority: dailyTask.priority,
+                goalTime: totalSeconds,
+                categoryId: catId,
+                title: finalTitle,
+                usesChecklist: descriptionType == .checklist
+            )
         }
         
         if let selectedCategory {
-            CoreDataManager.shared.updateDailyTask(
-                dailyTask,
-                realTime: dailyTask.realTime,
-                isCompleted: dailyTask.isCompleted,
-                checklistState: finalChecklistState,
-                checklistTexts: finalChecklistTexts,
-                descriptionText: finalDescription,
-                priority: dailyTask.priority,
-                goalTime: totalSeconds,
-                categoryId: selectedCategory.id
-            )
+            updateBlock(selectedCategory.id)
         } else {
-            CoreDataManager.shared.updateDailyTask(
-                dailyTask,
-                realTime: dailyTask.realTime,
-                isCompleted: dailyTask.isCompleted,
-                checklistState: finalChecklistState,
-                checklistTexts: finalChecklistTexts,
-                descriptionText: finalDescription,
-                priority: dailyTask.priority,
-                goalTime: totalSeconds,
-                categoryId: nil
-            )
+            updateBlock(nil)
         }
         
         onSaved?()

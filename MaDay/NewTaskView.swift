@@ -506,7 +506,8 @@ struct NewTaskView: View {
             defaultGoalTime: totalSeconds,
             defaultChecklist: finalChecklist,
             color: colorHex,
-            descriptionText: descriptionText
+            descriptionText: descriptionText,
+            usesChecklist: descriptionType == .checklist
         )
 
         dismiss()

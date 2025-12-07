@@ -67,7 +67,7 @@ struct RecordView: View {
                 fetchTodayTasks()
                 contextSaveSubscription = NotificationCenter.default.publisher(for: .NSManagedObjectContextDidSave)
                     .receive(on: RunLoop.main)
-                    .sink { _ in fetchTodayTasks() }
+                    .sink { _ in refreshTasksPreservingState() }
             }
             .onDisappear {
                 contextSaveSubscription?.cancel()
@@ -77,6 +77,7 @@ struct RecordView: View {
                     EditDailyTaskView(dailyTask: entity) {
                         fetchTodayTasks()
                         selectedTaskID = dailyTasks.first?.id
+                        renderToken = UUID()
                     }
                 }
             }
@@ -487,11 +488,12 @@ private struct TaskDisplay: Identifiable {
     let goalTime: TimeInterval?
     let trackedTime: TimeInterval
     let tag: TaskItem.Tag
+    let usesChecklist: Bool
     
     init?(entity: DailyTaskEntity) {
         guard let id = entity.id else { return nil }
         self.id = id
-        self.title = entity.task?.title ?? entity.descriptionText ?? "Untitled"
+        self.title = entity.title ?? entity.task?.title ?? entity.descriptionText ?? "Untitled"
         self.detail = entity.descriptionText ?? ""
         let texts = entity.checklistTexts ?? []
         let states = entity.checklistState ?? Array(repeating: false, count: texts.count)
@@ -510,6 +512,7 @@ private struct TaskDisplay: Identifiable {
         self.goalTime = goalSeconds > 0 ? TimeInterval(goalSeconds) : nil
         self.trackedTime = TimeInterval(entity.realTime)
         self.tag = .work
+        self.usesChecklist = entity.usesChecklist
     }
 }
 
@@ -550,9 +553,10 @@ private struct TaskCardView: View {
 
                 TagBadge(title: task.categoryTitle ?? task.tag.rawValue, color: task.categoryColor ?? task.tag.color)
                 
+                let hasContent = task.usesChecklist ? !task.checklist.isEmpty : (!task.detail.isEmpty || !task.checklist.isEmpty)
                 // Toggle button - always reserve space but only show when selected and has content
                 Button {
-                    if isSelected && (!task.checklist.isEmpty || !task.detail.isEmpty) {
+                    if isSelected && hasContent {
                         withAnimation(.easeInOut(duration: 0.2)) {
                             onToggleExpand()
                         }
@@ -571,12 +575,12 @@ private struct TaskCardView: View {
             .padding(.vertical, AppSpacing.smallPlus)
             
             // Expanded details section
-            if isSelected && isExpanded && (!task.checklist.isEmpty || !task.detail.isEmpty) {
+            if isSelected && isExpanded && (task.usesChecklist ? !task.checklist.isEmpty : (!task.detail.isEmpty || !task.checklist.isEmpty)) {
                 Divider()
                     .background(AppColor.border)
                 
                 VStack(alignment: .leading, spacing: AppSpacing.small) {
-                    if !task.checklist.isEmpty {
+                    if task.usesChecklist && !task.checklist.isEmpty {
                         ForEach(task.checklist.indices, id: \.self) { index in
                             HStack(spacing: AppSpacing.small) {
                                 Button {
@@ -598,12 +602,35 @@ private struct TaskCardView: View {
                             }
                             .padding(.vertical, 2)
                         }
-                    } else {
+                    } else if !task.detail.isEmpty {
                         Text(task.detail)
                             .font(AppFont.bodyRegular())
                             .foregroundColor(AppColor.textPrimary)
                             .fixedSize(horizontal: false, vertical: true)
                             .padding(.vertical, 4)
+                    } else if !task.checklist.isEmpty {
+                        // Fallback if detail empty but checklist exists and usesChecklist is false
+                        ForEach(task.checklist.indices, id: \.self) { index in
+                            HStack(spacing: AppSpacing.small) {
+                                Button {
+                                    onToggleChecklistItem?(index)
+                                } label: {
+                                    Image(systemName: task.checklist[index].isCompleted ? "checkmark.circle.fill" : "circle")
+                                        .font(.system(size: 18))
+                                        .foregroundColor(task.checklist[index].isCompleted ? AppColor.primary : AppColor.textSecondary)
+                                }
+                                .buttonStyle(.plain)
+                                
+                                Text(task.checklist[index].text)
+                                    .font(AppFont.bodyRegular())
+                                    .foregroundColor(task.checklist[index].isCompleted ? AppColor.textSecondary : AppColor.textPrimary)
+                                    .strikethrough(task.checklist[index].isCompleted)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                
+                                Spacer()
+                            }
+                            .padding(.vertical, 2)
+                        }
                     }
                 }
                 .padding(.horizontal, AppSpacing.mediumPlus)

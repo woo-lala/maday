@@ -15,8 +15,9 @@ struct AddTaskView: View {
     
     // Core Data State
     @State private var taskEntities: [TaskEntity] = []
-    @State private var editingEntity: TaskEntity?
+    @State private var editingTaskID: EditingTaskKey?
     @State private var contextSaveSubscription: AnyCancellable?
+    @State private var renderToken: UUID = UUID()
     
     var body: some View {
         NavigationStack {
@@ -39,22 +40,26 @@ struct AddTaskView: View {
             .navigationTitle("add_task.title")
             .navigationBarTitleDisplayMode(.inline)
             .onAppear {
-                taskEntities = CoreDataManager.shared.fetchTasks()
+                refreshTasks()
                 // Refresh when Core Data saves (e.g., after creating a new task)
                 contextSaveSubscription = NotificationCenter.default.publisher(for: .NSManagedObjectContextDidSave)
                     .receive(on: RunLoop.main)
                     .sink { _ in
-                        taskEntities = CoreDataManager.shared.fetchTasks()
+                        refreshTasks()
                     }
             }
             .onDisappear {
                 contextSaveSubscription?.cancel()
             }
-            .sheet(item: $editingEntity) { entity in
-                NavigationStack {
-                    EditTaskView(task: entity) {
-                        taskEntities = CoreDataManager.shared.fetchTasks()
+            .sheet(item: $editingTaskID) { key in
+                if let entity = taskEntities.first(where: { $0.id == key.id }) {
+                    NavigationStack {
+                        EditTaskView(task: entity) {
+                            refreshTasks()
+                        }
                     }
+                } else {
+                    Text("Task not found")
                 }
             }
         }
@@ -98,7 +103,9 @@ struct AddTaskView: View {
                             .buttonStyle(.plain)
                             .contextMenu {
                                 Button {
-                                    editingEntity = entity
+                                    if let id = entity.id {
+                                        editingTaskID = EditingTaskKey(id: id)
+                                    }
                                 } label: {
                                     Label("common.edit", systemImage: "pencil")
                                 }
@@ -116,6 +123,7 @@ struct AddTaskView: View {
             
             createNewLink
         }
+        .id(renderToken)
     }
 
     private var saveButtonBar: some View {
@@ -164,7 +172,7 @@ struct AddTaskView: View {
         }
 
         selectedTaskIDs.removeAll()
-        taskEntities = CoreDataManager.shared.fetchTasks()
+        refreshTasks()
         dismiss()
     }
 
@@ -173,8 +181,17 @@ struct AddTaskView: View {
             selectedTaskIDs.remove(id)
         }
         CoreDataManager.shared.deleteTask(entity)
-        taskEntities = CoreDataManager.shared.fetchTasks()
+        refreshTasks()
     }
+
+    private func refreshTasks() {
+        taskEntities = CoreDataManager.shared.fetchTasks()
+        renderToken = UUID()
+    }
+}
+
+private struct EditingTaskKey: Identifiable, Equatable {
+    let id: UUID
 }
 
 private struct ExistingTaskCard: View {
@@ -182,7 +199,6 @@ private struct ExistingTaskCard: View {
     let isSelected: Bool
     
     @State private var isExpanded: Bool = false
-    @State private var showDescription: Bool = false
     
     var title: String { entity.title ?? "" }
     var color: Color {
@@ -194,6 +210,12 @@ private struct ExistingTaskCard: View {
     var checkList: [String] { entity.defaultChecklist ?? [] }
     var goalTime: Int64 { entity.defaultGoalTime }
     var descriptionText: String { entity.descriptionText ?? "" }
+    var usesChecklist: Bool { entity.usesChecklist }
+
+    init(entity: TaskEntity, isSelected: Bool) {
+        self.entity = entity
+        self.isSelected = isSelected
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -221,7 +243,8 @@ private struct ExistingTaskCard: View {
                     }
                 }
                 
-                if !checkList.isEmpty {
+                // Arrow toggle to expand/collapse details
+                if (!checkList.isEmpty || !descriptionText.isEmpty) {
                     Button {
                         withAnimation(.easeInOut(duration: 0.2)) {
                             isExpanded.toggle()
@@ -233,24 +256,12 @@ private struct ExistingTaskCard: View {
                             .frame(width: 24, height: 24)
                     }
                     .buttonStyle(.plain)
-                } else if !descriptionText.isEmpty {
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            showDescription.toggle()
-                        }
-                    } label: {
-                        Image(systemName: showDescription ? "chevron.up" : "chevron.down")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(AppColor.textSecondary)
-                            .frame(width: 24, height: 24)
-                    }
-                    .buttonStyle(.plain)
                 }
             }
             .padding(.horizontal, AppSpacing.medium)
             .padding(.vertical, AppSpacing.smallPlus)
             
-            if isExpanded && !checkList.isEmpty {
+            if isExpanded && usesChecklist && !checkList.isEmpty {
                 Divider()
                     .background(AppColor.border)
                     .padding(.horizontal, AppSpacing.medium)
@@ -275,7 +286,7 @@ private struct ExistingTaskCard: View {
                 .padding(.vertical, AppSpacing.medium)
             }
             
-            if showDescription && !descriptionText.isEmpty && checkList.isEmpty {
+            if isExpanded && !usesChecklist && !descriptionText.isEmpty {
                 Divider()
                     .background(AppColor.border)
                     .padding(.horizontal, AppSpacing.medium)
@@ -285,6 +296,42 @@ private struct ExistingTaskCard: View {
                     .foregroundColor(AppColor.textPrimary)
                     .padding(.horizontal, AppSpacing.mediumPlus)
                     .padding(.vertical, AppSpacing.medium)
+            }
+            
+            // Fallbacks: if chosen mode is empty, show the other when available
+            if isExpanded && usesChecklist && checkList.isEmpty && !descriptionText.isEmpty {
+                Divider()
+                    .background(AppColor.border)
+                    .padding(.horizontal, AppSpacing.medium)
+                
+                Text(descriptionText)
+                    .font(AppFont.bodyRegular())
+                    .foregroundColor(AppColor.textPrimary)
+                    .padding(.horizontal, AppSpacing.mediumPlus)
+                    .padding(.vertical, AppSpacing.medium)
+            } else if isExpanded && !usesChecklist && descriptionText.isEmpty && !checkList.isEmpty {
+                Divider()
+                    .background(AppColor.border)
+                    .padding(.horizontal, AppSpacing.medium)
+                
+                VStack(alignment: .leading, spacing: AppSpacing.small) {
+                    ForEach(checkList, id: \.self) { item in
+                        HStack(spacing: AppSpacing.small) {
+                            Image(systemName: "circle")
+                                .font(.system(size: 18))
+                                .foregroundColor(AppColor.textSecondary)
+                            
+                            Text(item)
+                                .font(AppFont.bodyRegular())
+                                .foregroundColor(AppColor.textPrimary)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Spacer()
+                        }
+                        .padding(.vertical, 2)
+                    }
+                }
+                .padding(.horizontal, AppSpacing.mediumPlus)
+                .padding(.vertical, AppSpacing.medium)
             }
         }
         .background(

@@ -35,13 +35,22 @@ struct EditTaskView: View {
         _newTaskName = State(initialValue: task.title ?? "")
         _newTaskDescription = State(initialValue: task.descriptionText ?? "")
         
-        if let defaultChecklist = task.defaultChecklist, !defaultChecklist.isEmpty {
+        let defaultChecklist = task.defaultChecklist ?? []
+        let hasText = !(task.descriptionText ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let hasChecklist = !defaultChecklist.isEmpty
+        // 선택 우선순위: 텍스트가 있으면 텍스트 모드, 아니면 usesChecklist, 아니면 체크리스트 존재 여부
+        if hasText && !hasChecklist {
+            _descriptionType = State(initialValue: .text)
+        } else if task.usesChecklist && hasChecklist {
             _descriptionType = State(initialValue: .checklist)
-            _checklistItems = State(initialValue: defaultChecklist.map { ChecklistItem(text: $0, isCompleted: false) })
+        } else if hasText {
+            _descriptionType = State(initialValue: .text)
+        } else if hasChecklist {
+            _descriptionType = State(initialValue: .checklist)
         } else {
             _descriptionType = State(initialValue: .text)
-            _checklistItems = State(initialValue: [])
         }
+        _checklistItems = State(initialValue: defaultChecklist.map { ChecklistItem(text: $0, isCompleted: false) })
         
         let totalMinutes = Int(task.defaultGoalTime) / 60
         _goalHours = State(initialValue: totalMinutes / 60)
@@ -109,13 +118,6 @@ struct EditTaskView: View {
                     }
                     .pickerStyle(.segmented)
                     .frame(width: 180)
-                    .onChange(of: descriptionType) { _, newValue in
-                        if newValue == .text {
-                            checklistItems = []
-                        } else {
-                            newTaskDescription = ""
-                        }
-                    }
                 }
                 
                 if descriptionType == .text {
@@ -473,15 +475,11 @@ struct EditTaskView: View {
 
         var finalChecklist: [String] = []
         var descriptionText: String? = nil
-        if descriptionType == .text {
-            let text = newTaskDescription.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !text.isEmpty {
-                descriptionText = text
-            }
-        } else {
-            finalChecklist = checklistItems.map { $0.text }
-            descriptionText = nil
-        }
+        let usesChecklist = descriptionType == .checklist
+        // Always persist both; usesChecklist controls what is shown
+        finalChecklist = checklistItems.map { $0.text }
+        let text = newTaskDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+        descriptionText = text.isEmpty ? nil : text
 
         let totalSeconds = Int64(goalHours * 3600 + goalMinutes * 60)
         let colorHex = getColorHex(for: selectedCategory.colorId)
@@ -496,7 +494,8 @@ struct EditTaskView: View {
             defaultGoalTime: totalSeconds,
             defaultChecklist: finalChecklist,
             color: colorHex,
-            descriptionText: descriptionText
+            descriptionText: descriptionText,
+            usesChecklist: usesChecklist
         )
 
         onSaved?()
