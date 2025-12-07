@@ -2,12 +2,15 @@
 <model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="1" systemVersion="11A470a" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
     <entity name="DailyTaskEntity" representedClassName="DailyTaskEntity" syncable="YES">
         <attribute name="checklistState" optional="YES" attributeType="Transformable" customClassName="[Bool]" valueTransformerName="NSSecureUnarchiveFromDataTransformerName" />
+        <attribute name="checklistTexts" optional="YES" attributeType="Transformable" customClassName="[String]" valueTransformerName="NSSecureUnarchiveFromDataTransformerName" />
+        <attribute name="categoryId" optional="YES" attributeType="UUID" usesScalarValueType="NO" />
         <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO" />
         <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO" />
         <attribute name="descriptionText" optional="YES" attributeType="String" />
         <attribute name="goalTime" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES" />
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO" />
         <attribute name="isCompleted" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES" />
+        <attribute name="order" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES" />
         <attribute name="priority" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES" />
         <attribute name="realTime" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES" />
         <attribute name="updatedAt" optional="YES" attributeType="Date" usesScalarValueType="NO" />

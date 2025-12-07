@@ -51,8 +51,11 @@ struct AddTaskView: View {
                 contextSaveSubscription?.cancel()
             }
             .sheet(item: $editingEntity) { entity in
-                // Placeholder for Edit View
-                Text("Edit Task Placeholder")
+                NavigationStack {
+                    EditTaskView(task: entity) {
+                        taskEntities = CoreDataManager.shared.fetchTasks()
+                    }
+                }
             }
         }
     }
@@ -94,6 +97,12 @@ struct AddTaskView: View {
                             }
                             .buttonStyle(.plain)
                             .contextMenu {
+                                Button {
+                                    editingEntity = entity
+                                } label: {
+                                    Label("common.edit", systemImage: "pencil")
+                                }
+                                
                                 Button(role: .destructive) {
                                     deleteTask(entity)
                                 } label: {
@@ -146,8 +155,12 @@ struct AddTaskView: View {
         }
         
         let today = Date()
+        // Determine next order based on existing daily tasks count
+        let existing = CoreDataManager.shared.fetchDailyTasks(for: today)
+        var nextOrder = existing.map { Int($0.order) }.max() ?? -1
         selectedEntities.forEach { template in
-            _ = CoreDataManager.shared.createDailyTask(from: template, date: today)
+            nextOrder += 1
+            _ = CoreDataManager.shared.createDailyTask(from: template, date: today, order: Int16(nextOrder))
         }
 
         selectedTaskIDs.removeAll()

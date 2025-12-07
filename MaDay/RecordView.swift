@@ -22,6 +22,8 @@ struct RecordView: View {
     @State private var draggingTask: DailyTaskEntity?
     @State private var localTabSelection: TabItem = .home
     @State private var contextSaveSubscription: AnyCancellable?
+    @State private var expandedTaskIDs: Set<UUID> = []
+    @State private var renderToken: UUID = UUID()
 
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -68,6 +70,14 @@ struct RecordView: View {
             }
             .onDisappear {
                 contextSaveSubscription?.cancel()
+            }
+            .sheet(item: $editingTask) { entity in
+                NavigationStack {
+                    EditDailyTaskView(dailyTask: entity) {
+                        fetchTodayTasks()
+                        selectedTaskID = dailyTasks.first?.id
+                    }
+                }
             }
         }
         .onReceive(timer) { date in
@@ -118,11 +128,29 @@ struct RecordView: View {
                             isActive: activeTaskID == task.id,
                             trackedTime: task.trackedTime,
                             onToggleComplete: { toggleCompletion(for: task.id) },
-                            onToggleChecklistItem: nil
+                            onToggleChecklistItem: { index in
+                                toggleChecklistItem(taskId: task.id, itemIndex: index)
+                            },
+                            isExpanded: expandedTaskIDs.contains(task.id),
+                            onToggleExpand: {
+                                if expandedTaskIDs.contains(task.id) {
+                                    expandedTaskIDs.remove(task.id)
+                                } else {
+                                    expandedTaskIDs.insert(task.id)
+                                }
+                            }
                         )
                     }
                     .buttonStyle(.plain)
                     .contextMenu {
+                        Button {
+                            if let entity = dailyTasks.first(where: { $0.id == task.id }) {
+                                editingTask = entity
+                            }
+                        } label: {
+                            Label("common.edit", systemImage: "pencil")
+                        }
+                        
                         Button(role: .destructive) {
                             deleteTask(id: task.id)
                         } label: {
@@ -131,6 +159,7 @@ struct RecordView: View {
                     }
                 }
             }
+            .id(renderToken)
         }
     }
 
@@ -210,6 +239,9 @@ struct RecordView: View {
             goalAcknowledgedTaskID = nil
         }
         selectedTaskID = id
+        if let task = tasks.first(where: { $0.id == id }), (!task.checklist.isEmpty || !task.detail.isEmpty) {
+            expandedTaskIDs.insert(id)
+        }
     }
 
     private func startTimer() {
@@ -303,16 +335,25 @@ struct RecordView: View {
         lastTickDate = currentDate
     }
 
-private func updateDailyTask(with id: UUID, realTime: Int64? = nil, isCompleted: Bool? = nil, checklistState: [Bool]? = nil) {
-    guard let index = dailyTasks.firstIndex(where: { $0.id == id }) else { return }
-    let task = dailyTasks[index]
-    CoreDataManager.shared.updateDailyTask(task,
+    private func updateDailyTask(with id: UUID, realTime: Int64? = nil, isCompleted: Bool? = nil, checklistState: [Bool]? = nil, categoryId: UUID? = nil, refreshUI: Bool = false) {
+        guard let index = dailyTasks.firstIndex(where: { $0.id == id }) else { return }
+        let task = dailyTasks[index]
+        CoreDataManager.shared.updateDailyTask(task,
                                            realTime: realTime,
                                            isCompleted: isCompleted,
                                            checklistState: checklistState ?? task.checklistState,
                                            descriptionText: task.descriptionText,
-                                           priority: task.priority)
-}
+                                           priority: task.priority,
+                                           goalTime: task.goalTime,
+                                           categoryId: categoryId ?? task.categoryId)
+        if refreshUI {
+        dailyTasks = dailyTasks.map { $0 } // immediate UI update without reorder
+        renderToken = UUID()
+        DispatchQueue.main.async {
+            refreshTasksPreservingState()
+        }
+        }
+    }
     
     private func checkGoal(for id: UUID) {
         guard !showGoalDialog,
@@ -333,7 +374,9 @@ private func updateDailyTask(with id: UUID, realTime: Int64? = nil, isCompleted:
         if let task = dailyTasks.first(where: { $0.id == id }) {
             let newValue = !task.isCompleted
             task.isCompleted = newValue
-            updateDailyTask(with: id, isCompleted: newValue)
+        dailyTasks = dailyTasks.map { $0 } // trigger immediate UI refresh
+            renderToken = UUID()
+            updateDailyTask(with: id, isCompleted: newValue, refreshUI: true)
         }
     }
 
@@ -353,7 +396,7 @@ private func updateDailyTask(with id: UUID, realTime: Int64? = nil, isCompleted:
     private func toggleChecklistItem(taskId: UUID, itemIndex: Int) {
         guard let index = dailyTasks.firstIndex(where: { $0.id == taskId }) else { return }
         let entity = dailyTasks[index]
-        let texts = entity.task?.defaultChecklist ?? []
+        let texts = entity.checklistTexts ?? []
         guard itemIndex < texts.count else { return }
         var states = entity.checklistState ?? Array(repeating: false, count: texts.count)
         if itemIndex < states.count {
@@ -365,7 +408,9 @@ private func updateDailyTask(with id: UUID, realTime: Int64? = nil, isCompleted:
             }
         }
         entity.checklistState = states
-        updateDailyTask(with: taskId, checklistState: states)
+    dailyTasks = dailyTasks.map { $0 } // trigger immediate UI refresh
+        renderToken = UUID()
+        updateDailyTask(with: taskId, checklistState: states, refreshUI: true)
     }
     
     private func fetchTodayTasks() {
@@ -375,6 +420,26 @@ private func updateDailyTask(with id: UUID, realTime: Int64? = nil, isCompleted:
         } else if selectedTaskID == nil {
             selectedTaskID = dailyTasks.first?.id
         }
+    }
+
+    private func refreshTasksPreservingState() {
+        let previousSelected = selectedTaskID
+        let previousActive = activeTaskID
+        let previousExpanded = expandedTaskIDs
+        let updated = CoreDataManager.shared.fetchDailyTasks(for: Date())
+        dailyTasks = updated
+        if let sel = previousSelected, updated.contains(where: { $0.id == sel }) {
+            selectedTaskID = sel
+        } else {
+            selectedTaskID = updated.first?.id
+        }
+        if let act = previousActive, updated.contains(where: { $0.id == act }) {
+            activeTaskID = act
+        }
+        expandedTaskIDs = Set(updated.compactMap { entity in
+            guard let id = entity.id else { return nil }
+            return previousExpanded.contains(id) ? id : nil
+        })
     }
 }
 
@@ -395,14 +460,17 @@ private struct TaskDisplay: Identifiable {
         self.id = id
         self.title = entity.task?.title ?? entity.descriptionText ?? "Untitled"
         self.detail = entity.descriptionText ?? ""
-        let texts = entity.task?.defaultChecklist ?? []
+        let texts = entity.checklistTexts ?? []
         let states = entity.checklistState ?? Array(repeating: false, count: texts.count)
         self.checklist = texts.enumerated().map { idx, text in
             ChecklistItem(id: UUID(), text: text, isCompleted: states.indices.contains(idx) ? states[idx] : false)
         }
         self.isCompleted = entity.isCompleted
-        let catName = entity.task?.category?.name
-        let catColorHex = entity.task?.category?.color ?? entity.task?.color
+        let categories = CoreDataManager.shared.fetchCategories()
+        let overrideCategory = categories.first { $0.id == entity.categoryId }
+        let fallbackCategory = entity.task?.category
+        let catName = overrideCategory?.name ?? fallbackCategory?.name
+        let catColorHex = overrideCategory?.color ?? fallbackCategory?.color ?? entity.task?.color
         self.categoryTitle = catName ?? entity.task?.title
         self.categoryColor = catColorHex.map { Color(hex: $0) }
         let goalSeconds = entity.goalTime
@@ -419,8 +487,8 @@ private struct TaskCardView: View {
     let trackedTime: TimeInterval
     let onToggleComplete: () -> Void
     var onToggleChecklistItem: ((Int) -> Void)? = nil
-    
-    @State private var isExpanded: Bool = false
+    let isExpanded: Bool
+    let onToggleExpand: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -453,7 +521,7 @@ private struct TaskCardView: View {
                 Button {
                     if isSelected && (!task.checklist.isEmpty || !task.detail.isEmpty) {
                         withAnimation(.easeInOut(duration: 0.2)) {
-                            isExpanded.toggle()
+                            onToggleExpand()
                         }
                     }
                 } label: {
@@ -516,17 +584,6 @@ private struct TaskCardView: View {
         )
         .cornerRadius(AppRadius.standard)
         .shadow(color: AppShadow.card, radius: AppShadow.radius, x: AppShadow.x, y: AppShadow.y)
-        .onChange(of: isSelected) { oldValue, newValue in
-            // When task becomes selected, automatically expand if it has content
-            if newValue && (!task.checklist.isEmpty || !task.detail.isEmpty) {
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    isExpanded = true
-                }
-            } else if !newValue {
-                // When deselected, collapse
-                isExpanded = false
-            }
-        }
     }
 
     private var backgroundColor: Color {

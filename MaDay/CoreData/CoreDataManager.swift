@@ -80,12 +80,13 @@ class CoreDataManager {
 
     // MARK: - DailyTaskEntity CRUD (Snapshot)
 
-    func createDailyTask(from template: TaskEntity, date: Date) -> DailyTaskEntity {
+    func createDailyTask(from template: TaskEntity, date: Date, order: Int16) -> DailyTaskEntity {
         let dailyTask = DailyTaskEntity(context: context)
         dailyTask.id = UUID()
         dailyTask.date = date
         dailyTask.createdAt = Date()
         dailyTask.updatedAt = Date()
+        dailyTask.order = order
         
         // Snapshot: Copy values from template
         dailyTask.goalTime = template.defaultGoalTime
@@ -93,6 +94,8 @@ class CoreDataManager {
         dailyTask.isCompleted = false
         dailyTask.priority = 0
         dailyTask.descriptionText = template.descriptionText ?? ""
+        dailyTask.categoryId = template.category?.id
+        dailyTask.checklistTexts = template.defaultChecklist ?? []
         
         // Relationship
         dailyTask.task = template
@@ -119,10 +122,9 @@ class CoreDataManager {
         
         request.predicate = NSPredicate(format: "date >= %@ AND date < %@", startOfDay as NSDate, endOfDay as NSDate)
         
-        // Sort: Incomplete first, by Priority desc, then CreatedAt
+        // Sort by user-defined order, then createdAt
         request.sortDescriptors = [
-            NSSortDescriptor(key: "isCompleted", ascending: true),
-            NSSortDescriptor(key: "priority", ascending: false),
+            NSSortDescriptor(key: "order", ascending: true),
             NSSortDescriptor(key: "createdAt", ascending: true)
         ]
         
@@ -138,13 +140,19 @@ class CoreDataManager {
                         realTime: Int64? = nil,
                         isCompleted: Bool? = nil,
                         checklistState: [Bool]? = nil,
+                        checklistTexts: [String]? = nil,
                         descriptionText: String? = nil,
-                        priority: Int16? = nil) {
+                        priority: Int16? = nil,
+                        goalTime: Int64? = nil,
+                        categoryId: UUID? = nil) {
         if let realTime = realTime { dailyTask.realTime = realTime }
         if let isCompleted = isCompleted { dailyTask.isCompleted = isCompleted }
         if let checklistState = checklistState { dailyTask.checklistState = checklistState }
+        if let checklistTexts = checklistTexts { dailyTask.checklistTexts = checklistTexts }
         if let descriptionText = descriptionText { dailyTask.descriptionText = descriptionText }
         if let priority = priority { dailyTask.priority = priority }
+        if let goalTime = goalTime { dailyTask.goalTime = goalTime }
+        if let categoryId = categoryId { dailyTask.categoryId = categoryId }
         
         dailyTask.updatedAt = Date()
         saveContext()
