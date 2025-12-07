@@ -177,7 +177,7 @@ struct RecordView: View {
     }
 
     private var addTaskDestination: some View {
-        AddTaskView(tasks: .constant([]), taskLibrary: .constant([])) { _ in
+        AddTaskView(tasks: .constant([]), taskLibrary: .constant([]), targetDate: Date()) { _ in
             fetchTodayTasks()
             selectedTaskID = dailyTasks.first?.id
             activeTaskID = nil
@@ -449,6 +449,18 @@ private func toggleCompletion(for id: UUID) {
     
     private func fetchTodayTasks() {
         dailyTasks = CoreDataManager.shared.fetchDailyTasks(for: Date())
+        
+        // Debug log: print today's tasks with dates for inspection
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withFullDate, .withTime, .withColonSeparatorInTime]
+        print("---- Today’s DailyTasks ----")
+        dailyTasks.forEach { task in
+            let idText = task.id?.uuidString ?? "nil"
+            let dateText = task.date.map { formatter.string(from: $0) } ?? "nil"
+            let titleText = task.title ?? task.task?.title ?? "Untitled"
+            print("ID: \(idText), date: \(dateText), title: \(titleText), order: \(task.order)")
+        }
+        print("---------------------------")
         if let selected = selectedTaskID, !dailyTasks.contains(where: { $0.id == selected }) {
             selectedTaskID = dailyTasks.first?.id
         } else if selectedTaskID == nil {

@@ -7,12 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2FCCDD782EE5857B00287559 /* MaDay_AppIcon.png in Resources */ = {isa = PBXBuildFile; fileRef = 2FCCDD772EE5857B00287559 /* MaDay_AppIcon.png */; };
 		90D39A3EFDC69A6EF8F368DD /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 63AE3DDDA1392FCD708A903C /* Localizable.strings */; };
 		E2471BA84D9EC7BC5CC1656B /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 47742BE7F58ACDF224C9CFDE /* Localizable.strings */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		2F507F6A2EADEB8600749D60 /* MaDay.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MaDay.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2FCCDD772EE5857B00287559 /* MaDay_AppIcon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = MaDay_AppIcon.png; sourceTree = "<group>"; };
 		47742BE7F58ACDF224C9CFDE /* Localizable.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = Localizable.strings; path = ko.lproj/Localizable.strings; sourceTree = "<group>"; };
 		63AE3DDDA1392FCD708A903C /* Localizable.strings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = Localizable.strings; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -41,6 +43,7 @@
 			children = (
 				63AE3DDDA1392FCD708A903C /* Localizable.strings */,
 				47742BE7F58ACDF224C9CFDE /* Localizable.strings */,
+				2FCCDD772EE5857B00287559 /* MaDay_AppIcon.png */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -124,6 +127,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2FCCDD782EE5857B00287559 /* MaDay_AppIcon.png in Resources */,
 				90D39A3EFDC69A6EF8F368DD /* Localizable.strings in Resources */,
 				E2471BA84D9EC7BC5CC1656B /* Localizable.strings in Resources */,
 			);

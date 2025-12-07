@@ -9,6 +9,9 @@ struct AddTaskView: View {
     @Binding var tasks: [TaskItem]
     @Binding var taskLibrary: [TaskItem]
     
+    /// Date for which daily tasks are being created (e.g., today). Defaults to current date.
+    var targetDate: Date = Date()
+    
     var onTaskCreated: ((TaskItem) -> Void)? = nil
 
     @State private var selectedTaskIDs: Set<UUID> = []
@@ -162,7 +165,7 @@ struct AddTaskView: View {
             return false
         }
         
-        let today = Date()
+        let today = Calendar.current.startOfDay(for: targetDate)
         // Determine next order based on existing daily tasks count
         let existing = CoreDataManager.shared.fetchDailyTasks(for: today)
         var nextOrder = existing.map { Int($0.order) }.max() ?? -1
