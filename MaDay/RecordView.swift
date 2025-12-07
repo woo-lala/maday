@@ -24,6 +24,7 @@ struct RecordView: View {
     @State private var contextSaveSubscription: AnyCancellable?
     @State private var expandedTaskIDs: Set<UUID> = []
     @State private var renderToken: UUID = UUID()
+    @State private var draggingTaskID: UUID?
 
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -118,44 +119,55 @@ struct RecordView: View {
             }
 
             VStack(spacing: AppSpacing.smallPlus) {
-                ForEach(tasks) { task in
-                    Button {
-                        handleTaskSelection(task.id)
-                    } label: {
-                        TaskCardView(
-                            task: task,
-                            isSelected: selectedTaskID == task.id,
-                            isActive: activeTaskID == task.id,
-                            trackedTime: task.trackedTime,
-                            onToggleComplete: { toggleCompletion(for: task.id) },
-                            onToggleChecklistItem: { index in
-                                toggleChecklistItem(taskId: task.id, itemIndex: index)
-                            },
-                            isExpanded: expandedTaskIDs.contains(task.id),
-                            onToggleExpand: {
-                                if expandedTaskIDs.contains(task.id) {
-                                    expandedTaskIDs.remove(task.id)
-                                } else {
-                                    expandedTaskIDs.insert(task.id)
-                                }
-                            }
-                        )
-                    }
-                    .buttonStyle(.plain)
-                    .contextMenu {
+                ForEach(dailyTasks, id: \.id) { entity in
+                    if let id = entity.id, let display = TaskDisplay(entity: entity) {
                         Button {
-                            if let entity = dailyTasks.first(where: { $0.id == task.id }) {
+                            handleTaskSelection(id)
+                        } label: {
+                            TaskCardView(
+                                task: display,
+                                isSelected: selectedTaskID == id,
+                                isActive: activeTaskID == id,
+                                trackedTime: display.trackedTime,
+                                onToggleComplete: { toggleCompletion(for: id) },
+                                onToggleChecklistItem: { index in
+                                    toggleChecklistItem(taskId: id, itemIndex: index)
+                                },
+                                isExpanded: expandedTaskIDs.contains(id),
+                                onToggleExpand: {
+                                    if expandedTaskIDs.contains(id) {
+                                        expandedTaskIDs.remove(id)
+                                    } else {
+                                        expandedTaskIDs.insert(id)
+                                    }
+                                }
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .contextMenu {
+                            Button {
                                 editingTask = entity
+                            } label: {
+                                Label("common.edit", systemImage: "pencil")
                             }
-                        } label: {
-                            Label("common.edit", systemImage: "pencil")
+                            
+                            Button(role: .destructive) {
+                                deleteTask(id: id)
+                            } label: {
+                                Label("common.delete", systemImage: "trash")
+                            }
                         }
-                        
-                        Button(role: .destructive) {
-                            deleteTask(id: task.id)
-                        } label: {
-                            Label("common.delete", systemImage: "trash")
+                        .onDrag {
+                            draggingTaskID = id
+                            return NSItemProvider(object: id.uuidString as NSString)
                         }
+                        .onDrop(of: [.text], delegate: TaskReorderDropDelegate(
+                            itemID: id,
+                            items: $dailyTasks,
+                            draggingItemID: $draggingTaskID,
+                            onMove: moveTask,
+                            onDropCompleted: persistOrderUpdates
+                        ))
                     }
                 }
             }
@@ -335,17 +347,18 @@ struct RecordView: View {
         lastTickDate = currentDate
     }
 
-    private func updateDailyTask(with id: UUID, realTime: Int64? = nil, isCompleted: Bool? = nil, checklistState: [Bool]? = nil, categoryId: UUID? = nil, refreshUI: Bool = false) {
-        guard let index = dailyTasks.firstIndex(where: { $0.id == id }) else { return }
-        let task = dailyTasks[index]
-        CoreDataManager.shared.updateDailyTask(task,
+private func updateDailyTask(with id: UUID, realTime: Int64? = nil, isCompleted: Bool? = nil, checklistState: [Bool]? = nil, categoryId: UUID? = nil, order: Int16? = nil, refreshUI: Bool = false) {
+    guard let index = dailyTasks.firstIndex(where: { $0.id == id }) else { return }
+    let task = dailyTasks[index]
+    CoreDataManager.shared.updateDailyTask(task,
                                            realTime: realTime,
                                            isCompleted: isCompleted,
                                            checklistState: checklistState ?? task.checklistState,
                                            descriptionText: task.descriptionText,
                                            priority: task.priority,
                                            goalTime: task.goalTime,
-                                           categoryId: categoryId ?? task.categoryId)
+                                           categoryId: categoryId ?? task.categoryId,
+                                           order: order ?? task.order)
         if refreshUI {
         dailyTasks = dailyTasks.map { $0 } // immediate UI update without reorder
         renderToken = UUID()
@@ -370,7 +383,7 @@ struct RecordView: View {
         goalPromptedTaskID = id
     }
 
-    private func toggleCompletion(for id: UUID) {
+private func toggleCompletion(for id: UUID) {
         if let task = dailyTasks.first(where: { $0.id == id }) {
             let newValue = !task.isCompleted
             task.isCompleted = newValue
@@ -411,6 +424,26 @@ struct RecordView: View {
     dailyTasks = dailyTasks.map { $0 } // trigger immediate UI refresh
         renderToken = UUID()
         updateDailyTask(with: taskId, checklistState: states, refreshUI: true)
+    }
+
+    private func moveTask(draggingID: UUID, over targetID: UUID) {
+        guard let from = dailyTasks.firstIndex(where: { $0.id == draggingID }),
+              let to = dailyTasks.firstIndex(where: { $0.id == targetID }) else { return }
+        if from != to {
+            let item = dailyTasks.remove(at: from)
+            dailyTasks.insert(item, at: to)
+            renderToken = UUID()
+        }
+    }
+    
+    private func persistOrderUpdates() {
+        for (idx, entity) in dailyTasks.enumerated() {
+            entity.order = Int16(idx)
+            if let id = entity.id {
+                updateDailyTask(with: id, order: Int16(idx), refreshUI: false)
+            }
+        }
+        renderToken = UUID()
     }
     
     private func fetchTodayTasks() {
@@ -626,6 +659,29 @@ private struct TaskCardView: View {
         } else {
             return "\(seconds)s"
         }
+    }
+}
+
+private struct TaskReorderDropDelegate: DropDelegate {
+    let itemID: UUID
+    @Binding var items: [DailyTaskEntity]
+    @Binding var draggingItemID: UUID?
+    let onMove: (UUID, UUID) -> Void
+    let onDropCompleted: () -> Void
+    
+    func dropEntered(info: DropInfo) {
+        guard let draggingID = draggingItemID, draggingID != itemID else { return }
+        onMove(draggingID, itemID)
+    }
+    
+    func performDrop(info: DropInfo) -> Bool {
+        draggingItemID = nil
+        onDropCompleted()
+        return true
+    }
+    
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        DropProposal(operation: .move)
     }
 }
 

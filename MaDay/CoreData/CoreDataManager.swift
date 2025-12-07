@@ -144,7 +144,8 @@ class CoreDataManager {
                         descriptionText: String? = nil,
                         priority: Int16? = nil,
                         goalTime: Int64? = nil,
-                        categoryId: UUID? = nil) {
+                        categoryId: UUID? = nil,
+                        order: Int16? = nil) {
         if let realTime = realTime { dailyTask.realTime = realTime }
         if let isCompleted = isCompleted { dailyTask.isCompleted = isCompleted }
         if let checklistState = checklistState { dailyTask.checklistState = checklistState }
@@ -153,6 +154,7 @@ class CoreDataManager {
         if let priority = priority { dailyTask.priority = priority }
         if let goalTime = goalTime { dailyTask.goalTime = goalTime }
         if let categoryId = categoryId { dailyTask.categoryId = categoryId }
+        if let order = order { dailyTask.order = order }
         
         dailyTask.updatedAt = Date()
         saveContext()
