@@ -172,11 +172,11 @@ private struct ExistingTaskCard: View {
     @State private var showDescription: Bool = false
     
     var title: String { entity.title ?? "" }
-    var color: Color { 
-        if let hex = entity.color {
+    var color: Color {
+        if let hex = entity.category?.color ?? entity.color {
             return Color(hex: hex)
         }
-        return AppColor.primary 
+        return AppColor.primary
     }
     var checkList: [String] { entity.defaultChecklist ?? [] }
     var goalTime: Int64 { entity.defaultGoalTime }

@@ -13,7 +13,7 @@ class CoreDataManager {
     // MARK: - TaskEntity CRUD (Template)
 
     func createTask(title: String, 
-                   categoryId: UUID?, 
+                   category: CategoryEntity?, 
                    defaultGoalTime: Int64, 
                    defaultChecklist: [String]?, 
                    color: String?,
@@ -21,7 +21,7 @@ class CoreDataManager {
         let task = TaskEntity(context: context)
         task.id = UUID()
         task.title = title
-        task.categoryId = categoryId
+        task.category = category
         task.defaultGoalTime = defaultGoalTime
         task.defaultChecklist = defaultChecklist
         task.color = color
@@ -57,13 +57,13 @@ class CoreDataManager {
 
     func updateTask(_ task: TaskEntity, 
                    title: String? = nil, 
-                   categoryId: UUID? = nil,
+                   category: CategoryEntity? = nil,
                    defaultGoalTime: Int64? = nil, 
                    defaultChecklist: [String]? = nil,
                    color: String? = nil,
                    descriptionText: String? = nil) {
         if let title = title { task.title = title }
-        if let categoryId = categoryId { task.categoryId = categoryId }
+        if let category = category { task.category = category }
         if let defaultGoalTime = defaultGoalTime { task.defaultGoalTime = defaultGoalTime }
         if let defaultChecklist = defaultChecklist { task.defaultChecklist = defaultChecklist }
         if let color = color { task.color = color }
@@ -152,6 +152,36 @@ class CoreDataManager {
 
     func deleteDailyTask(_ dailyTask: DailyTaskEntity) {
         context.delete(dailyTask)
+        saveContext()
+    }
+
+    // MARK: - Category CRUD
+
+    func fetchCategories() -> [CategoryEntity] {
+        let request: NSFetchRequest<CategoryEntity> = CategoryEntity.fetchRequest()
+        request.sortDescriptors = [NSSortDescriptor(key: "order", ascending: true)]
+        do {
+            return try context.fetch(request)
+        } catch {
+            print("Error fetching categories: \(error.localizedDescription)")
+            return []
+        }
+    }
+
+    func createCategory(name: String, color: String, order: Int16) -> CategoryEntity {
+        let category = CategoryEntity(context: context)
+        category.id = UUID()
+        category.name = name
+        category.color = color
+        category.order = order
+        category.createdAt = Date()
+        category.updatedAt = Date()
+        saveContext()
+        return category
+    }
+
+    func deleteCategory(_ category: CategoryEntity) {
+        context.delete(category)
         saveContext()
     }
 

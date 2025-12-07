@@ -69,9 +69,7 @@ struct NewTaskView: View {
     }
 
     private var availablePalette: [ColorChoice] {
-        let used = Set(categoryOptions.map { $0.colorId })
-        let excluded = used.union([ColorChoice.primaryConflictId])
-        return Array(ColorChoice.base.filter { !excluded.contains($0.id) }.prefix(4))
+        ColorChoice.fixed
     }
 
     var body: some View {
@@ -91,6 +89,9 @@ struct NewTaskView: View {
         .navigationBarTitleDisplayMode(.inline)
         .safeAreaInset(edge: .bottom) {
             saveButtonBar
+        }
+        .onAppear {
+            loadCategories()
         }
     }
     
@@ -191,9 +192,108 @@ struct NewTaskView: View {
                                         showAddCategoryForm = false
                                     }
                                 }
+                                .contextMenu {
+                                    Button(role: .destructive) {
+                                        deleteCategory(id: category.id)
+                                    } label: {
+                                        Label("common.delete", systemImage: "trash")
+                                    }
+                                }
                             }
                             
-                            // Category add form removed for brevity and focus on core task creation
+                            if showAddCategoryForm {
+                                VStack(alignment: .leading, spacing: AppSpacing.small) {
+                                    AppTextField("new_task.category.placeholder.name", text: $newCategoryName)
+                                    
+                                    HStack(spacing: AppSpacing.xSmall) {
+                                        ForEach(availablePalette) { choice in
+                                            Circle()
+                                                .fill(choice.color)
+                                                .frame(width: 24, height: 24)
+                                                .overlay(
+                                                    Circle()
+                                                        .stroke(choice.id == newCategoryColorId ? AppColor.primaryStrong : AppColor.border, lineWidth: choice.id == newCategoryColorId ? 2 : 1)
+                                                )
+                                                .shadow(color: choice.id == newCategoryColorId ? AppColor.primary.opacity(0.25) : .clear, radius: choice.id == newCategoryColorId ? 3 : 0, x: 0, y: 1)
+                                                .onTapGesture {
+                                                    newCategoryColor = choice.color
+                                                    newCategoryColorId = choice.id
+                                                }
+                                        }
+                                        
+                                        ColorPicker("", selection: Binding(get: {
+                                            newCategoryColor
+                                        }, set: { newVal in
+                                            newCategoryColor = newVal
+                                            newCategoryColorId = "custom-\(UUID().uuidString)"
+                                        }))
+                                        .labelsHidden()
+                                        .frame(width: 30, height: 30)
+                                    }
+                                    
+                                    HStack(spacing: AppSpacing.small) {
+                                        Button {
+                                            addCategory()
+                                        } label: {
+                                            Text("add_task.category.add")
+                                                .font(AppFont.button())
+                                                .frame(maxWidth: .infinity)
+                                                .frame(height: AppMetrics.buttonHeight)
+                                                .foregroundColor(AppColor.white)
+                                                .background(
+                                                    RoundedRectangle(cornerRadius: AppRadius.button, style: .continuous)
+                                                        .fill(AppColor.primary)
+                                                )
+                                        }
+                                        .buttonStyle(.plain)
+                                        .disabled(newCategoryName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                                        
+                                        Button {
+                                            withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
+                                                showAddCategoryForm = false
+                                                newCategoryName = ""
+                                            }
+                                        } label: {
+                                            Text("common.cancel")
+                                                .font(AppFont.button())
+                                                .frame(height: AppMetrics.buttonHeight)
+                                                .foregroundColor(AppColor.textSecondary)
+                                                .padding(.horizontal, AppSpacing.medium)
+                                                .background(
+                                                    RoundedRectangle(cornerRadius: AppRadius.button, style: .continuous)
+                                                        .stroke(AppColor.border, lineWidth: 1)
+                                                )
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
+                                .padding(.horizontal, AppSpacing.medium)
+                                .padding(.bottom, AppSpacing.smallPlus)
+                            } else {
+                                Button {
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
+                                        prepareAddCategoryForm()
+                                    }
+                                } label: {
+                                    HStack {
+                                        Image(systemName: "plus")
+                                            .font(.system(size: 14, weight: .semibold))
+                                            .foregroundColor(AppColor.white)
+                                        Text("add_task.category.add_button")
+                                            .font(AppFont.body())
+                                            .foregroundColor(AppColor.white)
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 36)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: AppRadius.button, style: .continuous)
+                                            .fill(AppColor.primary)
+                                    )
+                                    .padding(.horizontal, AppSpacing.small)
+                                }
+                                .buttonStyle(.plain)
+                                .disabled(availablePalette.isEmpty)
+                            }
                         }
                         .padding(.horizontal, AppSpacing.medium)
                         .padding(.vertical, AppSpacing.smallPlus)
@@ -396,11 +496,13 @@ struct NewTaskView: View {
 
         let totalSeconds = Int64(goalHours * 3600 + goalMinutes * 60)
         let colorHex = getColorHex(for: selectedCategory.colorId)
+        let categories = CoreDataManager.shared.fetchCategories()
+        let chosenCategory = categories.first { $0.id == selectedCategory.id }
+        let categoryEntity = chosenCategory ?? CoreDataManager.shared.createCategory(name: selectedCategory.name, color: colorHex, order: Int16(categories.count))
         
-        // Ignoring Edit Mode logic for now as we focus on Creation first
         _ = CoreDataManager.shared.createTask(
             title: title,
-            categoryId: UUID(), // Placeholder
+            category: categoryEntity,
             defaultGoalTime: totalSeconds,
             defaultChecklist: finalChecklist,
             color: colorHex,
@@ -418,7 +520,57 @@ struct NewTaskView: View {
         newChecklistItemText = ""
     }
     
-    // Helper to map colorId to hex string (Matches Color+Extension.swift and ColorChoice palette)
+    private func loadCategories() {
+        let categories = CoreDataManager.shared.fetchCategories()
+        if categories.isEmpty {
+            let defaults = CategoryOption.defaults
+            for (idx, opt) in defaults.enumerated() {
+                _ = CoreDataManager.shared.createCategory(name: opt.name, color: getColorHex(for: opt.colorId), order: Int16(idx))
+            }
+            let seeded = CoreDataManager.shared.fetchCategories()
+            categoryOptions = seeded.map { CategoryOption(entity: $0) }
+            selectedCategoryId = seeded.first?.id
+        } else {
+            categoryOptions = categories.map { CategoryOption(entity: $0) }
+            if selectedCategoryId == nil {
+                selectedCategoryId = categories.first?.id
+            }
+        }
+    }
+    
+    private func addCategory() {
+        let name = newCategoryName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return }
+        let categories = CoreDataManager.shared.fetchCategories()
+        let newOrder = Int16(categories.count)
+        let newEntity = CoreDataManager.shared.createCategory(name: name, color: getColorHex(for: newCategoryColorId), order: newOrder)
+        let option = CategoryOption(entity: newEntity)
+        categoryOptions.append(option)
+        selectedCategoryId = option.id
+        newCategoryName = ""
+        showAddCategoryForm = false
+        categoryPickerExpanded = false
+    }
+    
+    private func prepareAddCategoryForm() {
+        if let first = availablePalette.first {
+            newCategoryColor = first.color
+            newCategoryColorId = first.id
+        }
+        showAddCategoryForm = true
+    }
+    
+    private func deleteCategory(id: UUID) {
+        let categories = CoreDataManager.shared.fetchCategories()
+        guard let target = categories.first(where: { $0.id == id }) else { return }
+        CoreDataManager.shared.deleteCategory(target)
+        categoryOptions.removeAll { $0.id == id }
+        if selectedCategoryId == id {
+            selectedCategoryId = categoryOptions.first?.id
+        }
+    }
+    
+    // Helper to map colorId to hex string (Matches fixed palette + defaults)
     private func getColorHex(for id: String) -> String {
         switch id {
         // App Default Categories (Matches DesignSystem.swift mappings)
@@ -429,17 +581,11 @@ struct NewTaskView: View {
         case "youtube": return "E94E3D"
         case "shopping": return "2EB97F"
         case "cooking": return "6B7280"
-            
-        // Custom Category Palette (from ColorChoice)
-        case "emerald": return "10B981"
-        case "amber": return "F59E0B"
-        case "fuchsia": return "EC4899"
-        case "teal": return "14B8A6"
-        case "indigo": return "6366F1"
-        case "rose": return "F43F5E"
-        case "slate": return "64748B"
-        case "lime": return "84CC16"
-            
+        case "blue": return "3D7AF5"
+        case "green": return "26BA67"
+        case "yellow": return "FFC23F"
+        case "orange": return "FF9500"
+        case "red": return "FF3B30"
         default: return "3D7AF5" // Default fallback
         }
     }
@@ -447,7 +593,7 @@ struct NewTaskView: View {
 
 // Supporting Structs
 private struct CategoryOption: Identifiable, Hashable {
-    let id = UUID()
+    let id: UUID
     let name: String
     let colorId: String
     let color: Color
@@ -455,28 +601,44 @@ private struct CategoryOption: Identifiable, Hashable {
     let isDefault: Bool
 
     static let defaults: [CategoryOption] = [
-        CategoryOption(name: "Work", colorId: "work", color: AppColor.work, tag: .work, isDefault: true),
-        CategoryOption(name: "Personal", colorId: "personal", color: AppColor.personal, tag: .personal, isDefault: true),
-        CategoryOption(name: "Fitness", colorId: "fitness", color: AppColor.fitness, tag: .fitness, isDefault: true),
-        CategoryOption(name: "Learn", colorId: "learn", color: AppColor.learning, tag: .learn, isDefault: true),
-        CategoryOption(name: "YouTube", colorId: "youtube", color: AppColor.youtube, tag: .youtube, isDefault: true),
-        CategoryOption(name: "Cooking", colorId: "cooking", color: AppColor.cooking, tag: .cooking, isDefault: true)
+        CategoryOption(id: UUID(), name: "Work", colorId: "work", color: AppColor.work, tag: .work, isDefault: true),
+        CategoryOption(id: UUID(), name: "Personal", colorId: "personal", color: AppColor.personal, tag: .personal, isDefault: true),
+        CategoryOption(id: UUID(), name: "Fitness", colorId: "fitness", color: AppColor.fitness, tag: .fitness, isDefault: true),
+        CategoryOption(id: UUID(), name: "Learn", colorId: "learn", color: AppColor.learning, tag: .learn, isDefault: true),
+        CategoryOption(id: UUID(), name: "YouTube", colorId: "youtube", color: AppColor.youtube, tag: .youtube, isDefault: true),
+        CategoryOption(id: UUID(), name: "Cooking", colorId: "cooking", color: AppColor.cooking, tag: .cooking, isDefault: true)
     ]
+
+    init(id: UUID = UUID(), name: String, colorId: String, color: Color, tag: TaskItem.Tag, isDefault: Bool) {
+        self.id = id
+        self.name = name
+        self.colorId = colorId
+        self.color = color
+        self.tag = tag
+        self.isDefault = isDefault
+    }
+    
+    init(entity: CategoryEntity) {
+        self.id = entity.id ?? UUID()
+        self.name = entity.name ?? "Unnamed"
+        let hex = entity.color ?? "3D7AF5"
+        self.colorId = hex
+        self.color = Color(hex: hex)
+        self.tag = .work
+        self.isDefault = false
+    }
 }
 
 private struct ColorChoice: Identifiable {
     let id: String
     let color: Color
 
-    static let base: [ColorChoice] = [
-        ColorChoice(id: "emerald", color: Color(red: 0.06, green: 0.73, blue: 0.51)),
-        ColorChoice(id: "amber", color: Color(red: 0.96, green: 0.62, blue: 0.04)),
-        ColorChoice(id: "fuchsia", color: Color(red: 0.93, green: 0.28, blue: 0.6)),
-        ColorChoice(id: "teal", color: Color(red: 0.08, green: 0.72, blue: 0.65)),
-        ColorChoice(id: "indigo", color: Color(red: 0.39, green: 0.4, blue: 0.9)),
-        ColorChoice(id: "rose", color: Color(red: 0.96, green: 0.25, blue: 0.37)),
-        ColorChoice(id: "slate", color: Color(red: 0.39, green: 0.45, blue: 0.55)),
-        ColorChoice(id: "lime", color: Color(red: 0.52, green: 0.8, blue: 0.09))
+    static let fixed: [ColorChoice] = [
+        ColorChoice(id: "blue", color: Color(hex: "3D7AF5")),
+        ColorChoice(id: "green", color: Color(hex: "26BA67")),
+        ColorChoice(id: "yellow", color: Color(hex: "FFC23F")),
+        ColorChoice(id: "orange", color: Color(hex: "FF9500")),
+        ColorChoice(id: "red", color: Color(hex: "FF3B30"))
     ]
 
     static let primaryConflictId = "azure"

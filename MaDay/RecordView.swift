@@ -401,12 +401,10 @@ private struct TaskDisplay: Identifiable {
             ChecklistItem(id: UUID(), text: text, isCompleted: states.indices.contains(idx) ? states[idx] : false)
         }
         self.isCompleted = entity.isCompleted
-        self.categoryTitle = entity.task?.title
-        if let hex = entity.task?.color {
-            self.categoryColor = Color(hex: hex)
-        } else {
-            self.categoryColor = nil
-        }
+        let catName = entity.task?.category?.name
+        let catColorHex = entity.task?.category?.color ?? entity.task?.color
+        self.categoryTitle = catName ?? entity.task?.title
+        self.categoryColor = catColorHex.map { Color(hex: $0) }
         let goalSeconds = entity.goalTime
         self.goalTime = goalSeconds > 0 ? TimeInterval(goalSeconds) : nil
         self.trackedTime = TimeInterval(entity.realTime)

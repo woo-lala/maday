@@ -18,6 +18,7 @@ extension TaskEntity {
     @NSManaged public var title: String?
     @NSManaged public var updatedAt: Date?
     @NSManaged public var dailyTasks: NSSet?
+    @NSManaged public var category: CategoryEntity?
 
 }
 
