@@ -10,9 +10,6 @@ struct RecordView: View {
     @State private var dailyTasks: [DailyTaskEntity] = []
     @State private var selectedTaskID: UUID?
     @State private var activeTaskID: UUID?
-    @State private var isTimerRunning = false
-    @State private var sessionElapsed: TimeInterval = 0
-    @State private var lastTickDate: Date?
     @State private var showAddTask = false
     @State private var showGoalDialog = false
     @State private var goalPromptedTaskID: UUID?
@@ -25,15 +22,16 @@ struct RecordView: View {
     @State private var expandedTaskIDs: Set<UUID> = []
     @State private var renderToken: UUID = UUID()
     @State private var draggingTaskID: UUID?
-
-    private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    @StateObject private var timerViewModel = TimerViewModel()
 
     private var tasks: [TaskDisplay] {
         dailyTasks.compactMap { TaskDisplay(entity: $0) }
     }
 
     private var totalTrackedTime: TimeInterval {
-        dailyTasks.reduce(0) { $0 + TimeInterval($1.realTime) }
+        dailyTasks.reduce(0) { partial, entity in
+            partial + liveTrackedTime(for: entity)
+        }
     }
 
     var body: some View {
@@ -82,8 +80,10 @@ struct RecordView: View {
                 }
             }
         }
-        .onReceive(timer) { date in
-            accumulateElapsed(currentDate: date)
+        .onReceive(timerViewModel.$elapsedTime) { _ in
+            if let activeID = activeTaskID {
+                checkGoal(for: activeID)
+            }
         }
     }
 
@@ -129,7 +129,7 @@ struct RecordView: View {
                                 task: display,
                                 isSelected: selectedTaskID == id,
                                 isActive: activeTaskID == id,
-                                trackedTime: display.trackedTime,
+                                trackedTime: liveTrackedTime(for: entity),
                                 onToggleComplete: { toggleCompletion(for: id) },
                                 onToggleChecklistItem: { index in
                                     toggleChecklistItem(taskId: id, itemIndex: index)
@@ -181,9 +181,7 @@ struct RecordView: View {
             fetchTodayTasks()
             selectedTaskID = dailyTasks.first?.id
             activeTaskID = nil
-            sessionElapsed = 0
-            isTimerRunning = false
-            lastTickDate = nil
+            timerViewModel.select(task: nil)
         }
         .toolbar(.visible, for: .navigationBar)
         .navigationBarBackButtonHidden(false)
@@ -193,16 +191,19 @@ struct RecordView: View {
         let activeTask = tasks.first { $0.id == activeTaskID }
         let selectedTask = tasks.first { $0.id == selectedTaskID }
         let targetTask = activeTask ?? selectedTask
+        let activeEntity = dailyTasks.first { $0.id == targetTask?.id }
+        let tracked = activeEntity.map { liveTrackedTime(for: $0) } ?? (targetTask?.trackedTime ?? 0)
+        let currentTime = activeEntity != nil ? TimeInterval(timerViewModel.elapsedTime) : 0
         let shouldShowStopwatch = {
             guard let id = targetTask?.id else { return false }
             return goalAcknowledgedTaskID == id || goalDismissedTaskIDs.contains(id)
         }()
         
         return TimerSectionView(
-            currentTime: sessionElapsed,
+            currentTime: currentTime,
             totalTime: totalTrackedTime,
             goalTime: targetTask?.goalTime,
-            trackedTime: targetTask?.trackedTime ?? 0,
+            trackedTime: tracked,
             showStopwatchAfterGoal: shouldShowStopwatch
         )
         .sectionCardStyle()
@@ -230,79 +231,63 @@ struct RecordView: View {
     }
 
     private var canStartTimer: Bool {
-        !isTimerRunning && selectedTaskID != nil
+        selectedTaskID != nil && timerViewModel.timerState != .running
     }
 
     private var canPauseTimer: Bool {
-        isTimerRunning
+        timerViewModel.timerState == .running
     }
 
     private var canStopTimer: Bool {
-        sessionElapsed > 0 || isTimerRunning
+        timerViewModel.timerState == .running || timerViewModel.timerState == .paused
     }
 
     private func handleTaskSelection(_ id: UUID) {
-        if activeTaskID != nil && activeTaskID != id {
-            accumulateElapsed()
-            isTimerRunning = false
-            lastTickDate = nil
-            sessionElapsed = 0
-            activeTaskID = nil
-            goalPromptedTaskID = nil
-            goalAcknowledgedTaskID = nil
+        // While a timer is running, ignore taps on other tasks to avoid switching mid-session
+        if timerViewModel.timerState == .running, let active = activeTaskID, active != id {
+            return
         }
         selectedTaskID = id
+        if let entity = dailyTasks.first(where: { $0.id == id }) {
+            timerViewModel.select(task: entity)
+        }
         if let task = tasks.first(where: { $0.id == id }), (!task.checklist.isEmpty || !task.detail.isEmpty) {
             expandedTaskIDs.insert(id)
         }
     }
 
     private func startTimer() {
-        guard let selectedID = selectedTaskID, !isTimerRunning else { return }
-
-        if activeTaskID != selectedID {
-            activeTaskID = selectedID
-            sessionElapsed = 0
-            goalPromptedTaskID = nil
-            goalAcknowledgedTaskID = nil
+        if timerViewModel.timerState == .paused {
+            timerViewModel.resume()
+            return
         }
-
-        lastTickDate = Date()
-        isTimerRunning = true
+        guard let selectedID = selectedTaskID,
+              let entity = dailyTasks.first(where: { $0.id == selectedID }) else { return }
+        activeTaskID = selectedID
+        goalPromptedTaskID = nil
+        goalAcknowledgedTaskID = nil
+        timerViewModel.start(with: entity)
     }
 
     private func pauseTimer() {
-        guard isTimerRunning else { return }
-        accumulateElapsed()
-        isTimerRunning = false
-        lastTickDate = nil
+        timerViewModel.pause()
     }
 
     private func confirmStopTimer() {
-        // Accumulate any remaining elapsed time if timer is still running
-        if isTimerRunning {
-            accumulateElapsed()
-        }
-        
-        // If a goal dialog was shown/handled, remember it to avoid re-prompting immediately.
         if showGoalDialog || goalPromptedTaskID != nil {
             goalAcknowledgedTaskID = goalPromptedTaskID ?? activeTaskID
             if let acknowledged = goalAcknowledgedTaskID {
                 goalDismissedTaskIDs.insert(acknowledged)
             }
         }
-        sessionElapsed = 0
+        timerViewModel.stop()
         activeTaskID = nil
-        lastTickDate = nil
-        isTimerRunning = false
         showGoalDialog = false
         goalPromptedTaskID = nil
     }
     
     private func resumeAfterGoalPrompt() {
-        sessionElapsed = 0
-        isTimerRunning = true
-        lastTickDate = Date()
+        timerViewModel.resume()
         showGoalDialog = false
         goalAcknowledgedTaskID = activeTaskID
         if let activeID = activeTaskID {
@@ -311,41 +296,7 @@ struct RecordView: View {
     }
     
     private func stopTimer() {
-        // Compatibility helper for flows (e.g., delete) that need an immediate stop
         confirmStopTimer()
-    }
-
-    private func accumulateElapsed(currentDate: Date = Date()) {
-        guard let activeID = activeTaskID else {
-            lastTickDate = nil
-            return
-        }
-
-        if !isTimerRunning {
-            lastTickDate = currentDate
-            return
-        }
-
-        guard let lastTick = lastTickDate else {
-            lastTickDate = currentDate
-            return
-        }
-
-        let delta = currentDate.timeIntervalSince(lastTick)
-        guard delta > 0 else {
-            lastTickDate = currentDate
-            return
-        }
-
-        sessionElapsed += delta
-        if let task = dailyTasks.first(where: { $0.id == activeID }) {
-            let newTimeDouble = Double(task.realTime) + delta
-            let newTime = Int64(newTimeDouble.rounded())
-            task.realTime = newTime
-            updateDailyTask(with: activeID, realTime: newTime)
-        }
-        checkGoal(for: activeID)
-        lastTickDate = currentDate
     }
 
 private func updateDailyTask(with id: UUID, realTime: Int64? = nil, isCompleted: Bool? = nil, checklistState: [Bool]? = nil, categoryId: UUID? = nil, order: Int16? = nil, refreshUI: Bool = false) {
@@ -375,13 +326,26 @@ private func updateDailyTask(with id: UUID, realTime: Int64? = nil, isCompleted:
               goalAcknowledgedTaskID != id,
               !goalDismissedTaskIDs.contains(id) else { return }
         guard let task = tasks.first(where: { $0.id == id }), let goal = task.goalTime, goal > 0 else { return }
-        guard task.trackedTime >= goal else { return }
+        let currentTime = currentTrackedTime(for: id)
+        guard currentTime >= goal else { return }
         
         // Goal reached: pause timer and prompt the user
-        isTimerRunning = false
-        lastTickDate = nil
+        timerViewModel.pause()
         showGoalDialog = true
         goalPromptedTaskID = id
+    }
+
+    private func liveTrackedTime(for entity: DailyTaskEntity) -> TimeInterval {
+        guard let id = entity.id else { return TimeInterval(entity.realTime) }
+        if let active = timerViewModel.activeDailyTask?.id, active == id {
+            return TimeInterval(timerViewModel.elapsedTime)
+        }
+        return TimeInterval(entity.realTime)
+    }
+
+    private func currentTrackedTime(for id: UUID) -> TimeInterval {
+        guard let entity = dailyTasks.first(where: { $0.id == id }) else { return 0 }
+        return liveTrackedTime(for: entity)
     }
 
 private func toggleCompletion(for id: UUID) {
@@ -465,6 +429,10 @@ private func toggleCompletion(for id: UUID) {
             selectedTaskID = dailyTasks.first?.id
         } else if selectedTaskID == nil {
             selectedTaskID = dailyTasks.first?.id
+        }
+        let selectedEntity = dailyTasks.first(where: { $0.id == selectedTaskID })
+        if timerViewModel.timerState == .idle || timerViewModel.timerState == .finished {
+            timerViewModel.select(task: selectedEntity)
         }
     }
 

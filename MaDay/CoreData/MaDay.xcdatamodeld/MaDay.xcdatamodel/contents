@@ -16,6 +16,7 @@
         <attribute name="title" optional="YES" attributeType="String" />
         <attribute name="usesChecklist" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES" />
         <attribute name="updatedAt" optional="YES" attributeType="Date" usesScalarValueType="NO" />
+        <relationship name="sessions" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="SessionEntity" inverseName="dailyTask" inverseEntity="SessionEntity" />
         <relationship name="task" optional="YES" minCount="1" maxCount="1" deletionRule="Nullify" destinationEntity="TaskEntity" inverseName="dailyTasks" inverseEntity="TaskEntity" />
     </entity>
     <entity name="TaskEntity" representedClassName="TaskEntity" syncable="YES">
@@ -30,5 +31,24 @@
         <attribute name="updatedAt" optional="YES" attributeType="Date" usesScalarValueType="NO" />
         <attribute name="usesChecklist" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES" />
         <relationship name="dailyTasks" optional="YES" minCount="0" maxCount="0" deletionRule="Nullify" destinationEntity="DailyTaskEntity" inverseName="task" inverseEntity="DailyTaskEntity" />
-    <relationship name="category" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CategoryEntity" inverseName="tasks" inverseEntity="CategoryEntity" /></entity>
-<entity name="CategoryEntity" representedClassName="CategoryEntity" syncable="YES"><attribute name="id" attributeType="UUID" optional="YES" usesScalarValueType="NO" /><attribute name="name" attributeType="String" optional="YES" usesScalarValueType="NO" /><attribute name="color" attributeType="String" optional="YES" usesScalarValueType="NO" /><attribute name="order" attributeType="Integer 16" optional="NO" usesScalarValueType="YES" /><attribute name="createdAt" attributeType="Date" optional="YES" usesScalarValueType="NO" /><attribute name="updatedAt" attributeType="Date" optional="YES" usesScalarValueType="NO" /><relationship name="tasks" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="TaskEntity" inverseName="category" inverseEntity="TaskEntity" /></entity></model>
+        <relationship name="category" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CategoryEntity" inverseName="tasks" inverseEntity="CategoryEntity" />
+    </entity>
+    <entity name="CategoryEntity" representedClassName="CategoryEntity" syncable="YES">
+        <attribute name="id" attributeType="UUID" optional="YES" usesScalarValueType="NO" />
+        <attribute name="name" attributeType="String" optional="YES" usesScalarValueType="NO" />
+        <attribute name="color" attributeType="String" optional="YES" usesScalarValueType="NO" />
+        <attribute name="order" attributeType="Integer 16" optional="NO" usesScalarValueType="YES" />
+        <attribute name="createdAt" attributeType="Date" optional="YES" usesScalarValueType="NO" />
+        <attribute name="updatedAt" attributeType="Date" optional="YES" usesScalarValueType="NO" />
+        <relationship name="tasks" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="TaskEntity" inverseName="category" inverseEntity="TaskEntity" />
+    </entity>
+    <entity name="SessionEntity" representedClassName="SessionEntity" syncable="YES">
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO" />
+        <attribute name="duration" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES" />
+        <attribute name="endTime" optional="YES" attributeType="Date" usesScalarValueType="NO" />
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO" />
+        <attribute name="startTime" optional="YES" attributeType="Date" usesScalarValueType="NO" />
+        <attribute name="updatedAt" optional="YES" attributeType="Date" usesScalarValueType="NO" />
+        <relationship name="dailyTask" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="DailyTaskEntity" inverseName="sessions" inverseEntity="DailyTaskEntity" />
+    </entity>
+</model>

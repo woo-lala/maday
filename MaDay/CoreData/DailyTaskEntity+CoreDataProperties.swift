@@ -6,9 +6,9 @@ extension DailyTaskEntity {
         NSFetchRequest<DailyTaskEntity>(entityName: "DailyTaskEntity")
     }
 
-    @NSManaged public var categoryId: UUID?
     @NSManaged public var checklistState: [Bool]?
     @NSManaged public var checklistTexts: [String]?
+    @NSManaged public var categoryId: UUID?
     @NSManaged public var createdAt: Date?
     @NSManaged public var date: Date?
     @NSManaged public var descriptionText: String?
@@ -22,6 +22,22 @@ extension DailyTaskEntity {
     @NSManaged public var usesChecklist: Bool
     @NSManaged public var updatedAt: Date?
     @NSManaged public var task: TaskEntity?
+    @NSManaged public var sessions: NSSet?
+}
+
+// MARK: Generated accessors for sessions
+extension DailyTaskEntity {
+    @objc(addSessionsObject:)
+    @NSManaged public func addToSessions(_ value: SessionEntity)
+
+    @objc(removeSessionsObject:)
+    @NSManaged public func removeFromSessions(_ value: SessionEntity)
+
+    @objc(addSessions:)
+    @NSManaged public func addToSessions(_ values: NSSet)
+
+    @objc(removeSessions:)
+    @NSManaged public func removeFromSessions(_ values: NSSet)
 }
 
 extension DailyTaskEntity: Identifiable {}

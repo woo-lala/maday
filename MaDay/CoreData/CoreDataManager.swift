@@ -185,6 +185,81 @@ class CoreDataManager {
         saveContext()
     }
 
+    // MARK: - SessionEntity CRUD (Per-DailyTask measurement sessions)
+
+    @discardableResult
+    func createSession(for dailyTask: DailyTaskEntity, start: Date = Date()) -> SessionEntity {
+        let session = SessionEntity(context: context)
+        session.id = UUID()
+        session.startTime = start
+        session.createdAt = Date()
+        session.updatedAt = Date()
+        session.duration = 0
+        session.dailyTask = dailyTask
+        dailyTask.addToSessions(session)
+        print("[Session] Created session \(session.id?.uuidString ?? "nil") for dailyTask \(dailyTask.id?.uuidString ?? "nil") start=\(start)")
+        saveContext()
+        return session
+    }
+
+    /// Ends an active session and updates the parent DailyTaskEntity.realTime.
+    func endSession(_ session: SessionEntity, for dailyTask: DailyTaskEntity, end: Date = Date()) {
+        guard let start = session.startTime else { return }
+        session.endTime = end
+        session.duration = Int64(end.timeIntervalSince(start))
+        session.updatedAt = Date()
+
+        // Ensure we only add once per session closure
+        dailyTask.realTime = totalSessionDuration(for: dailyTask)
+        print("[Session] Ended session \(session.id?.uuidString ?? "nil") start=\(start) end=\(end) duration=\(session.duration) total=\(dailyTask.realTime)")
+        saveContext()
+    }
+
+    func fetchSessions(for dailyTask: DailyTaskEntity) -> [SessionEntity] {
+        let request: NSFetchRequest<SessionEntity> = SessionEntity.fetchRequest()
+        request.predicate = NSPredicate(format: "dailyTask == %@", dailyTask)
+        request.sortDescriptors = [NSSortDescriptor(key: "startTime", ascending: true)]
+        do {
+            let sessions = try context.fetch(request)
+            print("[Session] Fetched \(sessions.count) sessions for dailyTask \(dailyTask.id?.uuidString ?? "nil")")
+            return sessions
+        } catch {
+            print("Error fetching sessions: \(error.localizedDescription)")
+            return []
+        }
+    }
+
+    func deleteSession(_ session: SessionEntity) {
+        let sessionId = session.id?.uuidString ?? "nil"
+        context.delete(session)
+        print("[Session] Deleted session \(sessionId)")
+        saveContext()
+    }
+
+    /// Recalculate and return total measured seconds across all sessions.
+    func totalSessionDuration(for dailyTask: DailyTaskEntity) -> Int64 {
+        let sessions = fetchSessions(for: dailyTask)
+        let total = sessions.reduce(Int64(0)) { partial, session in
+            let duration: Int64
+            if let start = session.startTime, let end = session.endTime {
+                duration = Int64(end.timeIntervalSince(start))
+            } else {
+                duration = session.duration
+            }
+            return partial + max(0, duration)
+        }
+        dailyTask.realTime = total
+        dailyTask.updatedAt = Date()
+        print("[Session] totalSessionDuration dailyTask \(dailyTask.id?.uuidString ?? "nil") = \(total)")
+        sessions.forEach { session in
+            let sid = session.id?.uuidString ?? "nil"
+            let start = session.startTime?.description ?? "nil"
+            let end = session.endTime?.description ?? "nil"
+            print("    • Session \(sid) start=\(start) end=\(end) duration=\(session.duration)")
+        }
+        return total
+    }
+
     // MARK: - Category CRUD
 
     func fetchCategories() -> [CategoryEntity] {
