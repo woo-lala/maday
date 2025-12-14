@@ -22,7 +22,7 @@ struct RecordView: View {
     @State private var expandedTaskIDs: Set<UUID> = []
     @State private var renderToken: UUID = UUID()
     @State private var draggingTaskID: UUID?
-    @StateObject private var timerViewModel = TimerViewModel()
+    @EnvironmentObject var timerViewModel: TimerViewModel
 
     private var tasks: [TaskDisplay] {
         dailyTasks.compactMap { TaskDisplay(entity: $0) }
@@ -431,7 +431,13 @@ private func toggleCompletion(for id: UUID) {
             selectedTaskID = dailyTasks.first?.id
         }
         let selectedEntity = dailyTasks.first(where: { $0.id == selectedTaskID })
-        if timerViewModel.timerState == .idle || timerViewModel.timerState == .finished {
+        if timerViewModel.timerState == .running || timerViewModel.timerState == .paused {
+            // Restore UI state from global timer
+            if let active = timerViewModel.activeDailyTask {
+                activeTaskID = active.id
+                // Ensure the active task is visible/selected if appropriate, or at least loaded
+            }
+        } else if timerViewModel.timerState == .idle || timerViewModel.timerState == .finished {
             timerViewModel.select(task: selectedEntity)
         }
     }
@@ -876,4 +882,5 @@ private struct TagBadge: View {
 #Preview {
     RecordView(showsTabBar: true)
         .background(AppColor.background)
+        .environmentObject(TimerViewModel())
 }

@@ -21,6 +21,8 @@ extension DailyTaskEntity {
     @NSManaged public var title: String?
     @NSManaged public var usesChecklist: Bool
     @NSManaged public var updatedAt: Date?
+    @NSManaged public var synced: Bool
+    @NSManaged public var deletedAt: Date?
     @NSManaged public var task: TaskEntity?
     @NSManaged public var sessions: NSSet?
 }

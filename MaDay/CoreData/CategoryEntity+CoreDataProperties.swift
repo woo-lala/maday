@@ -12,6 +12,8 @@ extension CategoryEntity {
     @NSManaged public var order: Int16
     @NSManaged public var createdAt: Date?
     @NSManaged public var updatedAt: Date?
+    @NSManaged public var synced: Bool
+    @NSManaged public var deletedAt: Date?
     @NSManaged public var tasks: NSSet?
 }
 

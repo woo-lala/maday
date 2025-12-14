@@ -17,6 +17,8 @@ extension TaskEntity {
     @NSManaged public var id: UUID?
     @NSManaged public var title: String?
     @NSManaged public var updatedAt: Date?
+    @NSManaged public var synced: Bool
+    @NSManaged public var deletedAt: Date?
     @NSManaged public var usesChecklist: Bool
     @NSManaged public var dailyTasks: NSSet?
     @NSManaged public var category: CategoryEntity?
