@@ -191,6 +191,7 @@ class CoreDataManager {
     func createSession(for dailyTask: DailyTaskEntity, start: Date = Date()) -> SessionEntity {
         let session = SessionEntity(context: context)
         session.id = UUID()
+        session.session_uuid = session.id
         session.startTime = start
         session.createdAt = Date()
         session.updatedAt = Date()

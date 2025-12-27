@@ -57,6 +57,7 @@
         <attribute name="updatedAt" optional="YES" attributeType="Date" usesScalarValueType="NO" />
         <attribute name="version" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES" />
         <attribute name="sourceDevice" optional="YES" attributeType="String" />
+        <attribute name="session_uuid" optional="YES" attributeType="UUID" usesScalarValueType="NO" />
         <relationship name="dailyTask" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="DailyTaskEntity" inverseName="sessions" inverseEntity="DailyTaskEntity" />
     </entity>
 </model>

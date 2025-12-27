@@ -14,6 +14,7 @@ extension SessionEntity {
     @NSManaged public var updatedAt: Date?
     @NSManaged public var version: Int64
     @NSManaged public var sourceDevice: String?
+    @NSManaged public var session_uuid: UUID?
     @NSManaged public var dailyTask: DailyTaskEntity?
 }
 
