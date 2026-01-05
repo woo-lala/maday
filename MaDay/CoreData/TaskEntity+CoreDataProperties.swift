@@ -20,6 +20,8 @@ extension TaskEntity {
     @NSManaged public var synced: Bool
     @NSManaged public var deletedAt: Date?
     @NSManaged public var usesChecklist: Bool
+    @NSManaged public var dueDate: Date?
+    @NSManaged public var repeatDays: [Int]?
     @NSManaged public var dailyTasks: NSSet?
     @NSManaged public var category: CategoryEntity?
 

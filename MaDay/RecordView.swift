@@ -844,6 +844,8 @@ struct TaskItem: Identifiable {
     var categoryTitle: String? = nil
     var categoryColor: Color? = nil
     var goalTime: TimeInterval? = nil
+    var dueDate: Date? = nil
+    var repeatDays: [Int]? = nil
     
     // Create a copy of the task with a new ID (for adding library tasks to today's list)
     func copy() -> TaskItem {
@@ -856,7 +858,9 @@ struct TaskItem: Identifiable {
             isCompleted: false, // Reset completion status
             categoryTitle: categoryTitle,
             categoryColor: categoryColor,
-            goalTime: goalTime
+            goalTime: goalTime,
+            dueDate: dueDate,
+            repeatDays: repeatDays
         )
     }
 }

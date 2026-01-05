@@ -198,3 +198,10 @@
 "new_task.goal.none" = "목표 없음 (스톱워치 모드)";
 "new_task.picker.hours" = "시간";
 "new_task.picker.minutes" = "분";
+
+/* New Task View - New Fields */
+"new_task.field.due_date" = "마감 기한";
+"new_task.due_date.none" = "설정 안 함";
+"new_task.field.repeat" = "반복";
+"new_task.repeat.none" = "반복 안 함";
+"new_task.repeat.everyday" = "매일";

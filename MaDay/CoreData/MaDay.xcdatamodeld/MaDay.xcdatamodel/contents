@@ -34,6 +34,8 @@
         <attribute name="usesChecklist" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES" />
         <attribute name="synced" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES" />
         <attribute name="deletedAt" optional="YES" attributeType="Date" usesScalarValueType="NO" />
+        <attribute name="dueDate" optional="YES" attributeType="Date" usesScalarValueType="NO" />
+        <attribute name="repeatDays" optional="YES" attributeType="Transformable" customClassName="[Int]" valueTransformerName="NSSecureUnarchiveFromDataTransformerName" />
         <relationship name="dailyTasks" optional="YES" minCount="0" maxCount="0" deletionRule="Nullify" destinationEntity="DailyTaskEntity" inverseName="task" inverseEntity="DailyTaskEntity" />
         <relationship name="category" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CategoryEntity" inverseName="tasks" inverseEntity="CategoryEntity" />
     </entity>

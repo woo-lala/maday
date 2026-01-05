@@ -22,11 +22,18 @@ struct NewTaskView: View {
     @State private var goalMinutes: Int = 0
     @State private var showGoalTimePicker = false
     
+    @State private var hasDueDate: Bool = false
+    @State private var selectedDueDate: Date = Date()
+    @State private var showDatePicker = false
+    
+    @State private var repeatDays: Set<Int> = []
+    @State private var showRepeatPicker = false
+    
     enum DescriptionType {
         case text
         case checklist
     }
-    @State private var descriptionType: DescriptionType = .text
+    @State private var descriptionType: DescriptionType = .checklist
     @State private var checklistItems: [ChecklistItem] = []
     @State private var newChecklistItemText: String = ""
 
@@ -41,8 +48,11 @@ struct NewTaskView: View {
         if let existingChecklist = taskToEdit?.checklist, !existingChecklist.isEmpty {
             _descriptionType = State(initialValue: .checklist)
             _checklistItems = State(initialValue: existingChecklist)
-        } else {
+        } else if let detail = taskToEdit?.detail, !detail.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             _descriptionType = State(initialValue: .text)
+            _checklistItems = State(initialValue: [])
+        } else {
+            _descriptionType = State(initialValue: .checklist)
             _checklistItems = State(initialValue: [])
         }
         
@@ -57,6 +67,15 @@ struct NewTaskView: View {
         } else {
             _goalHours = State(initialValue: 0)
             _goalMinutes = State(initialValue: 0)
+        }
+        
+        if let dueDate = taskToEdit?.dueDate {
+            _hasDueDate = State(initialValue: true)
+            _selectedDueDate = State(initialValue: dueDate)
+        }
+        
+        if let days = taskToEdit?.repeatDays {
+            _repeatDays = State(initialValue: Set(days))
         }
     }
 
@@ -114,8 +133,8 @@ struct NewTaskView: View {
                     Spacer()
                     
                     Picker("", selection: $descriptionType) {
-                        Text("Text").tag(DescriptionType.text)
                         Text("Checklist").tag(DescriptionType.checklist)
+                        Text("Text").tag(DescriptionType.text)
                     }
                     .pickerStyle(.segmented)
                     .frame(width: 180)
@@ -302,6 +321,131 @@ struct NewTaskView: View {
                 .background(
                     RoundedRectangle(cornerRadius: AppRadius.standard, style: .continuous)
                         .stroke(AppColor.border, lineWidth: 1)
+                        .background(
+                            RoundedRectangle(cornerRadius: AppRadius.standard, style: .continuous)
+                                .fill(AppColor.surface)
+                        )
+                )
+            }
+            
+
+            // Due Date Section
+            VStack(alignment: .leading, spacing: AppSpacing.small) {
+                Text("new_task.field.due_date")
+                    .font(AppFont.callout())
+                    .foregroundColor(AppColor.textSecondary)
+
+                VStack(spacing: 0) {
+                    HStack {
+                        if hasDueDate {
+                            Text(dueDateFormatter.string(from: selectedDueDate))
+                                .font(AppFont.body())
+                                .foregroundColor(AppColor.textPrimary)
+                        } else {
+                            Text("new_task.due_date.none")
+                                .font(AppFont.body())
+                                .foregroundColor(AppColor.textSecondary)
+                        }
+                        
+                        Spacer()
+                        
+                        if hasDueDate {
+                            Button {
+                                withAnimation {
+                                    hasDueDate = false
+                                    showDatePicker = false
+                                }
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(AppColor.textSecondary)
+                            }
+                            .buttonStyle(.plain)
+                            .padding(.trailing, AppSpacing.small)
+                        }
+                        
+                        Image(systemName: "calendar")
+                            .font(AppFont.body())
+                            .foregroundColor(hasDueDate ? AppColor.primary : AppColor.textSecondary)
+                    }
+                    .padding(.horizontal, AppSpacing.medium)
+                    .padding(.vertical, AppSpacing.smallPlus)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                            showDatePicker.toggle()
+                            if showDatePicker && !hasDueDate {
+                                hasDueDate = true
+                                selectedDueDate = Date()
+                            }
+                        }
+                    }
+
+                    if showDatePicker {
+                        Divider()
+                            .padding(.horizontal, AppSpacing.medium)
+                        
+                        DatePicker("", selection: $selectedDueDate, displayedComponents: .date)
+                            .datePickerStyle(.graphical)
+                            .padding(AppSpacing.medium)
+                            .onChange(of: selectedDueDate) { oldValue, newValue in
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                    showDatePicker = false
+                                }
+                            }
+                    }
+                }
+                .background(
+                    RoundedRectangle(cornerRadius: AppRadius.standard, style: .continuous)
+                        .stroke(hasDueDate ? AppColor.primary : AppColor.border, lineWidth: hasDueDate ? 1.5 : 1)
+                        .background(
+                            RoundedRectangle(cornerRadius: AppRadius.standard, style: .continuous)
+                                .fill(AppColor.surface)
+                        )
+                )
+            }
+            
+            // Repeat Section
+            VStack(alignment: .leading, spacing: AppSpacing.small) {
+                Text("new_task.field.repeat")
+                    .font(AppFont.callout())
+                    .foregroundColor(AppColor.textSecondary)
+
+                VStack(spacing: 0) {
+                    HStack {
+                        Text(repeatSummary)
+                            .font(AppFont.body())
+                            .foregroundColor(repeatDays.isEmpty ? AppColor.textSecondary : AppColor.textPrimary)
+                        
+                        Spacer()
+                        
+                        Image(systemName: showRepeatPicker ? "chevron.up" : "chevron.down")
+                            .font(AppFont.caption())
+                            .foregroundColor(AppColor.textSecondary)
+                    }
+                    .padding(.horizontal, AppSpacing.medium)
+                    .padding(.vertical, AppSpacing.smallPlus)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                            showRepeatPicker.toggle()
+                        }
+                    }
+
+                    if showRepeatPicker {
+                        Divider()
+                            .padding(.horizontal, AppSpacing.medium)
+                        
+                        HStack(spacing: 0) {
+                            ForEach(1...7, id: \.self) { day in
+                                dayButton(for: day)
+                            }
+                        }
+                        .padding(AppSpacing.medium)
+                    }
+                }
+                .background(
+                    RoundedRectangle(cornerRadius: AppRadius.standard, style: .continuous)
+                        .stroke(!repeatDays.isEmpty ? AppColor.primary : AppColor.border, lineWidth: !repeatDays.isEmpty ? 1.5 : 1)
                         .background(
                             RoundedRectangle(cornerRadius: AppRadius.standard, style: .continuous)
                                 .fill(AppColor.surface)
@@ -507,7 +651,9 @@ struct NewTaskView: View {
             defaultChecklist: finalChecklist,
             color: colorHex,
             descriptionText: descriptionText,
-            usesChecklist: descriptionType == .checklist
+            usesChecklist: descriptionType == .checklist,
+            dueDate: hasDueDate ? selectedDueDate : nil,
+            repeatDays: repeatDays.isEmpty ? nil : Array(repeatDays)
         )
 
         dismiss()
@@ -560,6 +706,55 @@ struct NewTaskView: View {
         }
         showAddCategoryForm = true
     }
+    
+
+    
+    // Day 1 = Sunday in Gregorion, but standard usually Mon=1? 
+    // Calendar.current.component(.weekday) -> Sun=1, Mon=2.
+    // Let's use Sun=1, Mon=2 ... Sat=7 for consistency with Calendar
+    private func dayButton(for day: Int) -> some View {
+        let isSelected = repeatDays.contains(day)
+        let label = Calendar.current.shortWeekdaySymbols[day - 1].prefix(1)
+        
+        return Button {
+            if isSelected {
+                repeatDays.remove(day)
+            } else {
+                repeatDays.insert(day)
+            }
+        } label: {
+            Text(String(label))
+                .font(AppFont.caption())
+                .fontWeight(.bold)
+                .frame(maxWidth: .infinity)
+                .frame(height: 36)
+                .background(
+                    Circle()
+                        .fill(isSelected ? AppColor.primary : AppColor.background)
+                )
+                .overlay(
+                    Circle()
+                        .stroke(isSelected ? AppColor.primary : AppColor.border, lineWidth: 1)
+                )
+                .foregroundColor(isSelected ? AppColor.white : AppColor.textSecondary)
+        }
+        .buttonStyle(.plain)
+    }
+    
+    private var repeatSummary: String {
+        if repeatDays.isEmpty { return NSLocalizedString("new_task.repeat.none", comment: "None") }
+        if repeatDays.count == 7 { return NSLocalizedString("new_task.repeat.everyday", comment: "Every day") }
+        // Sort: 2,3,4,5,6,7,1 (Mon to Sun) looks better for display usually, but standard sort is fine
+        let sorted = repeatDays.sorted()
+        return sorted.map { Calendar.current.shortWeekdaySymbols[$0 - 1] }.joined(separator: ", ")
+    }
+    
+    private var dueDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        return formatter
+    }()
     
     private func deleteCategory(id: UUID) {
         let categories = CoreDataManager.shared.fetchCategories()

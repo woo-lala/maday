@@ -18,7 +18,9 @@ class CoreDataManager {
                    defaultChecklist: [String]?, 
                    color: String?,
                    descriptionText: String? = nil,
-                   usesChecklist: Bool = false) -> TaskEntity {
+                   usesChecklist: Bool = false,
+                   dueDate: Date? = nil,
+                   repeatDays: [Int]? = nil) -> TaskEntity {
         let task = TaskEntity(context: context)
         task.id = UUID()
         task.title = title
@@ -30,6 +32,8 @@ class CoreDataManager {
         task.createdAt = Date()
         task.updatedAt = Date()
         task.usesChecklist = usesChecklist
+        task.dueDate = dueDate
+        task.repeatDays = repeatDays
         
         saveContext()
         return task
@@ -64,7 +68,9 @@ class CoreDataManager {
                    defaultChecklist: [String]? = nil,
                    color: String? = nil,
                    descriptionText: String? = nil,
-                   usesChecklist: Bool? = nil) {
+                   usesChecklist: Bool? = nil,
+                   dueDate: Date? = nil,
+                   repeatDays: [Int]? = nil) {
         if let title = title { task.title = title }
         if let category = category { task.category = category }
         if let defaultGoalTime = defaultGoalTime { task.defaultGoalTime = defaultGoalTime }
@@ -72,6 +78,8 @@ class CoreDataManager {
         if let color = color { task.color = color }
         if let descriptionText = descriptionText { task.descriptionText = descriptionText }
         if let usesChecklist = usesChecklist { task.usesChecklist = usesChecklist }
+        if let dueDate = dueDate { task.dueDate = dueDate }
+        if let repeatDays = repeatDays { task.repeatDays = repeatDays }
         task.updatedAt = Date()
         
         saveContext()
