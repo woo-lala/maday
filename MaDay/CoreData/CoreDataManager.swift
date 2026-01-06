@@ -160,6 +160,26 @@ class CoreDataManager {
         }
     }
 
+    func fetchRecentDailyTasks(limitDays: Int) -> [DailyTaskEntity] {
+        let request: NSFetchRequest<DailyTaskEntity> = DailyTaskEntity.fetchRequest()
+        let calendar = Calendar.current
+        
+        let today = calendar.startOfDay(for: Date())
+        guard let startDate = calendar.date(byAdding: .day, value: -limitDays, to: today) else { return [] }
+        
+        // Fetch tasks from [Today - limitDays] up to now (inclusive/future not strictly excluded but 'Recent' implies past usage)
+        // Actually, we probably just want tasks CREATED/USED recently.
+        request.predicate = NSPredicate(format: "date >= %@", startDate as NSDate)
+        request.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
+        
+        do {
+            return try context.fetch(request)
+        } catch {
+            print("Error fetching recent daily tasks: \(error.localizedDescription)")
+            return []
+        }
+    }
+
     func updateDailyTask(_ dailyTask: DailyTaskEntity, 
                         realTime: Int64? = nil,
                         isCompleted: Bool? = nil,

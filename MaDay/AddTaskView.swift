@@ -22,6 +22,44 @@ struct AddTaskView: View {
     @State private var contextSaveSubscription: AnyCancellable?
     @State private var renderToken: UUID = UUID()
     
+    enum Tab: String, CaseIterable {
+        case recent = "add_task.tab.recent"
+        case planned = "add_task.tab.planned"
+        case all = "add_task.tab.all"
+    }
+    @State private var selectedTab: Tab = .recent
+    @State private var cachedRecentTaskIDs: [UUID] = [] // Ordered IDs
+    
+    private var filteredTaskEntities: [TaskEntity] {
+        switch selectedTab {
+        case .all:
+            return taskEntities
+        case .recent:
+            // Maintain order from cachedRecentTaskIDs
+            return cachedRecentTaskIDs.compactMap { id in
+                taskEntities.first(where: { $0.id == id })
+            }
+        case .planned:
+            let calendar = Calendar.current
+            let weekday = calendar.component(.weekday, from: targetDate) // 1=Sun, 2=Mon...
+            
+            return taskEntities.filter { entity in
+                // 1. Is it specifically targeted for today?
+                if let tDate = entity.dueDate, calendar.isDate(tDate, inSameDayAs: targetDate) {
+                    return true
+                }
+                // 2. Does it repeat on this weekday?
+                if let repeatDays = entity.repeatDays, repeatDays.contains(weekday) {
+                    // Check if we should only show future/active repeats? 
+                    // Usually repeat applies indefinitely unless there's a start/end date logic.
+                    // Assuming indefinite for now as per minimal implementation.
+                    return true
+                }
+                return false
+            }
+        }
+    }
+    
     var body: some View {
         NavigationStack {
             ZStack {
@@ -29,6 +67,15 @@ struct AddTaskView: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: AppSpacing.large) {
+                        
+                        Picker("", selection: $selectedTab) {
+                            ForEach(Tab.allCases, id: \.self) { tab in
+                                Text(NSLocalizedString(tab.rawValue, comment: "")).tag(tab)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .padding(.bottom, AppSpacing.small)
+                        
                         // Category Filter Disabled
                         existingTasksSection
                     }
@@ -85,15 +132,15 @@ struct AddTaskView: View {
             Text("add_task.section.existing")
                 .sectionTitleStyle()
 
-            if taskEntities.isEmpty {
-                Text("add_task.empty.category")
+            if filteredTaskEntities.isEmpty {
+                Text(selectedTab == .planned ? "No planned tasks for this date" : "add_task.empty.category") // TODO: Localize "No planned..." if strictly needed, or reuse empty
                     .font(AppFont.bodyRegular())
                     .foregroundColor(AppColor.textSecondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.vertical, AppSpacing.small)
             } else {
                 LazyVStack(spacing: AppSpacing.smallPlus) {
-                    ForEach(taskEntities, id: \.id) { entity in
+                    ForEach(filteredTaskEntities, id: \.id) { entity in
                         if let id = entity.id {
                             Button {
                                 toggleSelection(for: id)
@@ -189,6 +236,23 @@ struct AddTaskView: View {
 
     private func refreshTasks() {
         taskEntities = CoreDataManager.shared.fetchTasks()
+        
+        // Refresh Recent List
+        let recentDaily = CoreDataManager.shared.fetchRecentDailyTasks(limitDays: 3)
+        // Extract unique task IDs in order of recency (most recent first)
+        var seen = Set<UUID>()
+        var ordered = [UUID]()
+        
+        for daily in recentDaily {
+            if let task = daily.task, let id = task.id {
+                if !seen.contains(id) {
+                    seen.insert(id)
+                    ordered.append(id)
+                }
+            }
+        }
+        cachedRecentTaskIDs = ordered
+        
         renderToken = UUID()
     }
 }

@@ -205,3 +205,8 @@
 "new_task.field.repeat" = "Repeat";
 "new_task.repeat.none" = "None";
 "new_task.repeat.everyday" = "Every Day";
+
+/* Add Task View - Tabs */
+"add_task.tab.recent" = "Recent";
+"add_task.tab.planned" = "Planned";
+"add_task.tab.all" = "All";

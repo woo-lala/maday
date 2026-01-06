@@ -205,3 +205,8 @@
 "new_task.field.repeat" = "반복";
 "new_task.repeat.none" = "반복 안 함";
 "new_task.repeat.everyday" = "매일";
+
+/* Add Task View - Tabs */
+"add_task.tab.recent" = "최근";
+"add_task.tab.planned" = "계획됨";
+"add_task.tab.all" = "전체";
