@@ -315,20 +315,11 @@ struct EditTaskView: View {
                                 .fill(AppColor.surface)
                         )
                 )
-                }
-                .background(
-                    RoundedRectangle(cornerRadius: AppRadius.standard, style: .continuous)
-                        .stroke(AppColor.border, lineWidth: 1)
-                        .background(
-                            RoundedRectangle(cornerRadius: AppRadius.standard, style: .continuous)
-                                .fill(AppColor.surface)
-                        )
-                )
             }
             
             // Due Date Section
             VStack(alignment: .leading, spacing: AppSpacing.small) {
-                Text("new_task.field.due_date")
+                Text("new_task.field.target_date")
                     .font(AppFont.callout())
                     .foregroundColor(AppColor.textSecondary)
 
@@ -339,7 +330,7 @@ struct EditTaskView: View {
                                 .font(AppFont.body())
                                 .foregroundColor(AppColor.textPrimary)
                         } else {
-                            Text("new_task.due_date.none")
+                            Text("new_task.target_date.none")
                                 .font(AppFont.body())
                                 .foregroundColor(AppColor.textSecondary)
                         }
@@ -449,6 +440,7 @@ struct EditTaskView: View {
                         )
                 )
             }
+            VStack(alignment: .leading, spacing: AppSpacing.small) {
                 Text("new_task.field.goal")
                     .font(AppFont.callout())
                     .foregroundColor(AppColor.textSecondary)

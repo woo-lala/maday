@@ -200,8 +200,8 @@
 "new_task.picker.minutes" = "Minutes";
 
 /* New Task View - New Fields */
-"new_task.field.due_date" = "Due Date";
-"new_task.due_date.none" = "None";
+"new_task.field.target_date" = "Target Date";
+"new_task.target_date.none" = "None";
 "new_task.field.repeat" = "Repeat";
 "new_task.repeat.none" = "None";
 "new_task.repeat.everyday" = "Every Day";

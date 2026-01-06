@@ -200,8 +200,8 @@
 "new_task.picker.minutes" = "분";
 
 /* New Task View - New Fields */
-"new_task.field.due_date" = "마감 기한";
-"new_task.due_date.none" = "설정 안 함";
+"new_task.field.target_date" = "목표 날짜";
+"new_task.target_date.none" = "설정 안 함";
 "new_task.field.repeat" = "반복";
 "new_task.repeat.none" = "반복 안 함";
 "new_task.repeat.everyday" = "매일";

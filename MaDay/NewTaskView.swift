@@ -329,9 +329,9 @@ struct NewTaskView: View {
             }
             
 
-            // Due Date Section
+            // Target Date Section
             VStack(alignment: .leading, spacing: AppSpacing.small) {
-                Text("new_task.field.due_date")
+                Text("new_task.field.target_date")
                     .font(AppFont.callout())
                     .foregroundColor(AppColor.textSecondary)
 
@@ -342,7 +342,7 @@ struct NewTaskView: View {
                                 .font(AppFont.body())
                                 .foregroundColor(AppColor.textPrimary)
                         } else {
-                            Text("new_task.due_date.none")
+                            Text("new_task.target_date.none")
                                 .font(AppFont.body())
                                 .foregroundColor(AppColor.textSecondary)
                         }
