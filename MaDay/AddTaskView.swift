@@ -32,6 +32,7 @@ struct AddTaskView: View {
     
     enum SortOption: String, CaseIterable, Identifiable {
         case name = "Name"
+        case category = "Category"
         case createdDesc = "Newest"
         case createdAsc = "Oldest"
         
@@ -40,6 +41,7 @@ struct AddTaskView: View {
         var localizedName: LocalizedStringKey {
             switch self {
             case .name: return "Name" // TODO: Localize if needed
+            case .category: return "Category"
             case .createdDesc: return "Newest"
             case .createdAsc: return "Oldest"
             }
@@ -79,10 +81,37 @@ struct AddTaskView: View {
         switch sortOption {
         case .name:
             return result.sorted { ($0.title ?? "") < ($1.title ?? "") }
+        case .category:
+            return result.sorted {
+                let keyA = CategoryKey.from(entity: $0)
+                let keyB = CategoryKey.from(entity: $1)
+                if keyA.name == keyB.name {
+                    return ($0.title ?? "") < ($1.title ?? "")
+                }
+                return keyA.name < keyB.name
+            }
         case .createdDesc:
             return result.sorted { ($0.createdAt ?? Date()) > ($1.createdAt ?? Date()) }
         case .createdAsc:
             return result.sorted { ($0.createdAt ?? Date()) < ($1.createdAt ?? Date()) }
+        }
+    }
+
+    private var groupedTaskEntities: [CategoryGroup] {
+        var order: [CategoryKey] = []
+        var bucket: [CategoryKey: [TaskEntity]] = [:]
+
+        for entity in filteredTaskEntities {
+            let key = CategoryKey.from(entity: entity)
+            if bucket[key] == nil {
+                order.append(key)
+                bucket[key] = []
+            }
+            bucket[key, default: []].append(entity)
+        }
+
+        return order.map { key in
+            CategoryGroup(id: key.key, name: key.name, color: key.color, tasks: bucket[key] ?? [])
         }
     }
     
@@ -178,31 +207,47 @@ struct AddTaskView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.vertical, AppSpacing.small)
             } else {
-                LazyVStack(spacing: AppSpacing.smallPlus) {
-                    ForEach(filteredTaskEntities, id: \.id) { entity in
-                        if let id = entity.id {
-                            Button {
-                                toggleSelection(for: id)
-                            } label: {
-                                ExistingTaskCard(
-                                    entity: entity,
-                                    isSelected: selectedTaskIDs.contains(id)
-                                )
+                LazyVStack(alignment: .leading, spacing: AppSpacing.medium) {
+                    ForEach(groupedTaskEntities) { group in
+                        VStack(alignment: .leading, spacing: AppSpacing.smallPlus) {
+                            HStack(spacing: AppSpacing.small) {
+                                Circle()
+                                    .fill(group.color)
+                                    .frame(width: AppSpacing.medium, height: AppSpacing.medium)
+                                Text(group.name)
+                                    .font(AppFont.callout())
+                                    .foregroundColor(AppColor.textSecondary)
                             }
-                            .buttonStyle(.plain)
-                            .contextMenu {
-                                Button {
+                            .padding(.horizontal, AppSpacing.small)
+                            
+                            LazyVStack(spacing: AppSpacing.smallPlus) {
+                                ForEach(group.tasks, id: \.id) { entity in
                                     if let id = entity.id {
-                                        editingTaskID = EditingTaskKey(id: id)
+                                        Button {
+                                            toggleSelection(for: id)
+                                        } label: {
+                                            ExistingTaskCard(
+                                                entity: entity,
+                                                isSelected: selectedTaskIDs.contains(id)
+                                            )
+                                        }
+                                        .buttonStyle(.plain)
+                                        .contextMenu {
+                                            Button {
+                                                if let id = entity.id {
+                                                    editingTaskID = EditingTaskKey(id: id)
+                                                }
+                                            } label: {
+                                                Label("common.edit", systemImage: "pencil")
+                                            }
+                                            
+                                            Button(role: .destructive) {
+                                                deleteTask(entity)
+                                            } label: {
+                                                Label("common.delete", systemImage: "trash")
+                                            }
+                                        }
                                     }
-                                } label: {
-                                    Label("common.edit", systemImage: "pencil")
-                                }
-                                
-                                Button(role: .destructive) {
-                                    deleteTask(entity)
-                                } label: {
-                                    Label("common.delete", systemImage: "trash")
                                 }
                             }
                         }
@@ -312,6 +357,28 @@ private struct EditingTaskKey: Identifiable, Equatable {
     let id: UUID
 }
 
+private struct CategoryGroup: Identifiable {
+    let id: String
+    let name: String
+    let color: Color
+    let tasks: [TaskEntity]
+}
+
+private struct CategoryKey: Hashable {
+    let id: UUID?
+    let name: String
+    let colorHex: String
+
+    var color: Color { Color(hex: colorHex) }
+    var key: String { id?.uuidString ?? "uncategorized-\(name)" }
+
+    static func from(entity: TaskEntity) -> CategoryKey {
+        let name = entity.category?.name ?? "Uncategorized"
+        let hex = entity.category?.color ?? entity.color ?? "3D7AF5"
+        return CategoryKey(id: entity.category?.id, name: name, colorHex: hex)
+    }
+}
+
 private struct ExistingTaskCard: View {
     let entity: TaskEntity
     let isSelected: Bool
@@ -337,10 +404,10 @@ private struct ExistingTaskCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .top, spacing: AppSpacing.medium) {
+            HStack(alignment: .center, spacing: AppSpacing.medium) {
                 Circle()
                     .fill(color)
-                    .frame(width: AppSpacing.medium, height: AppSpacing.medium)
+                    .frame(width: AppSpacing.small, height: AppSpacing.small)
                     .shadow(color: color.opacity(0.25), radius: 2, x: 0, y: 1)
 
                 VStack(alignment: .leading, spacing: AppSpacing.xSmall) {

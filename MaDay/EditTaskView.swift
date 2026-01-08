@@ -43,17 +43,13 @@ struct EditTaskView: View {
         let defaultChecklist = task.defaultChecklist ?? []
         let hasText = !(task.descriptionText ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         let hasChecklist = !defaultChecklist.isEmpty
-        // 선택 우선순위: 텍스트가 있으면 텍스트 모드, 아니면 usesChecklist, 아니면 체크리스트 존재 여부
-        if hasText && !hasChecklist {
-            _descriptionType = State(initialValue: .text)
-        } else if task.usesChecklist && hasChecklist {
+        // 선택 우선순위: 체크리스트를 기본으로, 텍스트만 있을 때만 텍스트
+        if hasChecklist || task.usesChecklist {
             _descriptionType = State(initialValue: .checklist)
         } else if hasText {
             _descriptionType = State(initialValue: .text)
-        } else if hasChecklist {
-            _descriptionType = State(initialValue: .checklist)
         } else {
-            _descriptionType = State(initialValue: .text)
+            _descriptionType = State(initialValue: .checklist)
         }
         _checklistItems = State(initialValue: defaultChecklist.map { ChecklistItem(text: $0, isCompleted: false) })
         
@@ -732,4 +728,3 @@ private struct CategoryOption: Identifiable, Hashable {
         self.isDefault = false
     }
 }
-
