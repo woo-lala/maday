@@ -154,7 +154,7 @@
 "add_task.title" = "Add Task";
 "add_task.section.existing" = "Existing Tasks";
 "add_task.empty.category" = "No tasks in this category yet";
-"add_task.create_new" = "Or create a new task";
+"add_task.create_new" = "Create Task";
 "add_task.card.goal %@" = "Goal: %@";
 "add_task.card.checklist_preview %d" = "%d checklist items";
 
@@ -192,7 +192,7 @@
 "new_task.field.desc" = "Description";
 "new_task.placeholder.desc" = "Add a short description...";
 "new_task.field.category" = "Category";
-"new_task.category.add.name" = "Name";
+"new_task.category.add.name" = "Category Name";
 "new_task.category.add.button" = "Add Category";
 "new_task.field.goal" = "Goal Time (Optional)";
 "new_task.goal.none" = "No Goal (Stopwatch Mode)";
@@ -210,3 +210,4 @@
 "add_task.tab.recent" = "Recent";
 "add_task.tab.planned" = "Planned";
 "add_task.tab.all" = "All";
+"new_task.category.placeholder.name" = "Enter category name";

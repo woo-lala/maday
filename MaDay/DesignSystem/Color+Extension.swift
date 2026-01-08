@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 extension Color {
     /// Initialize a Color from a hex string like "#RRGGBB" or "RRGGBB".
@@ -38,4 +39,22 @@ extension Color {
     static let mdYoutube = Color(hex: "E94E3D")   // red
     static let mdShopping = Color(hex: "2EB97F")  // green variant
     static let mdCooking = Color(hex: "6B7280")   // gray
+    
+    // Helper to get hex string from Color
+    func toHex() -> String? {
+        // Convert to UIColor to easily extract components
+        let uiColor = UIColor(self)
+        
+        var red: CGFloat = 0
+        var green: CGFloat = 0
+        var blue: CGFloat = 0
+        var alpha: CGFloat = 0
+        
+        // getRed(_:green:blue:alpha:) works for most color spaces by converting to RGB
+        if uiColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha) {
+            return String(format: "%02lX%02lX%02lX", lroundf(Float(red) * 255), lroundf(Float(green) * 255), lroundf(Float(blue) * 255))
+        }
+        
+        return nil
+    }
 }

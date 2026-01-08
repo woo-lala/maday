@@ -170,7 +170,10 @@ class CoreDataManager {
         // Fetch tasks from [Today - limitDays] up to now (inclusive/future not strictly excluded but 'Recent' implies past usage)
         // Actually, we probably just want tasks CREATED/USED recently.
         request.predicate = NSPredicate(format: "date >= %@", startDate as NSDate)
-        request.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
+        request.sortDescriptors = [
+            NSSortDescriptor(key: "date", ascending: false),
+            NSSortDescriptor(key: "createdAt", ascending: false)
+        ]
         
         do {
             return try context.fetch(request)
@@ -321,7 +324,7 @@ class CoreDataManager {
 
     // MARK: - Persistence Info
 
-    private func saveContext() {
+    func saveContext() {
         if context.hasChanges {
             do {
                 try context.save()

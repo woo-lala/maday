@@ -23,19 +23,38 @@ struct AddTaskView: View {
     @State private var renderToken: UUID = UUID()
     
     enum Tab: String, CaseIterable {
-        case recent = "add_task.tab.recent"
-        case planned = "add_task.tab.planned"
         case all = "add_task.tab.all"
+        case planned = "add_task.tab.planned"
+        case recent = "add_task.tab.recent"
     }
-    @State private var selectedTab: Tab = .recent
+    @State private var selectedTab: Tab = .all
     @State private var cachedRecentTaskIDs: [UUID] = [] // Ordered IDs
     
+    enum SortOption: String, CaseIterable, Identifiable {
+        case name = "Name"
+        case createdDesc = "Newest"
+        case createdAsc = "Oldest"
+        
+        var id: String { rawValue }
+        
+        var localizedName: LocalizedStringKey {
+            switch self {
+            case .name: return "Name" // TODO: Localize if needed
+            case .createdDesc: return "Newest"
+            case .createdAsc: return "Oldest"
+            }
+        }
+    }
+    @State private var sortOption: SortOption = .createdDesc
+
     private var filteredTaskEntities: [TaskEntity] {
+        var result: [TaskEntity] = []
+        
         switch selectedTab {
         case .all:
-            return taskEntities
+            result = taskEntities
         case .recent:
-            // Maintain order from cachedRecentTaskIDs
+            // Maintain order from cachedRecentTaskIDs (Already sorted by "Recent Usage")
             return cachedRecentTaskIDs.compactMap { id in
                 taskEntities.first(where: { $0.id == id })
             }
@@ -43,20 +62,27 @@ struct AddTaskView: View {
             let calendar = Calendar.current
             let weekday = calendar.component(.weekday, from: targetDate) // 1=Sun, 2=Mon...
             
-            return taskEntities.filter { entity in
+            result = taskEntities.filter { entity in
                 // 1. Is it specifically targeted for today?
                 if let tDate = entity.dueDate, calendar.isDate(tDate, inSameDayAs: targetDate) {
                     return true
                 }
                 // 2. Does it repeat on this weekday?
                 if let repeatDays = entity.repeatDays, repeatDays.contains(weekday) {
-                    // Check if we should only show future/active repeats? 
-                    // Usually repeat applies indefinitely unless there's a start/end date logic.
-                    // Assuming indefinite for now as per minimal implementation.
                     return true
                 }
                 return false
             }
+        }
+        
+        // Apply Sort Option (Only for All and Planned, Recent has its own logic)
+        switch sortOption {
+        case .name:
+            return result.sorted { ($0.title ?? "") < ($1.title ?? "") }
+        case .createdDesc:
+            return result.sorted { ($0.createdAt ?? Date()) > ($1.createdAt ?? Date()) }
+        case .createdAsc:
+            return result.sorted { ($0.createdAt ?? Date()) < ($1.createdAt ?? Date()) }
         }
     }
     
@@ -68,13 +94,31 @@ struct AddTaskView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: AppSpacing.large) {
                         
+                        HStack {
+                            Text("add_task.section.existing")
+                                .sectionTitleStyle()
+                            
+                            Spacer()
+                            
+                            Menu {
+                                Picker("Sort By", selection: $sortOption) {
+                                    ForEach(SortOption.allCases) { option in
+                                        Text(option.localizedName).tag(option)
+                                    }
+                                }
+                            } label: {
+                                Image(systemName: "arrow.up.arrow.down")
+                                    .font(.system(size: 18))
+                                    .foregroundColor(AppColor.textSecondary)
+                            }
+                        }
+                        
                         Picker("", selection: $selectedTab) {
                             ForEach(Tab.allCases, id: \.self) { tab in
                                 Text(NSLocalizedString(tab.rawValue, comment: "")).tag(tab)
                             }
                         }
                         .pickerStyle(.segmented)
-                        .padding(.bottom, AppSpacing.small)
                         
                         // Category Filter Disabled
                         existingTasksSection
@@ -89,6 +133,9 @@ struct AddTaskView: View {
             }
             .navigationTitle("add_task.title")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                // Toolbar items removed
+            }
             .onAppear {
                 refreshTasks()
                 // Refresh when Core Data saves (e.g., after creating a new task)
@@ -112,25 +159,17 @@ struct AddTaskView: View {
                     Text("Task not found")
                 }
             }
+            .navigationDestination(for: String.self) { destination in
+                if destination == "NewTaskView" {
+                    NewTaskView(tasks: .constant([]))
+                }
+            }
         }
-    }
-
-    private var createNewLink: some View {
-        NavigationLink {
-            NewTaskView(tasks: .constant([]))
-        } label: {
-            Text("add_task.create_new")
-                .font(AppFont.caption())
-                .foregroundColor(AppColor.primary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .padding(.top, AppSpacing.medium)
     }
 
     private var existingTasksSection: some View {
         VStack(alignment: .leading, spacing: AppSpacing.medium) {
-            Text("add_task.section.existing")
-                .sectionTitleStyle()
+
 
             if filteredTaskEntities.isEmpty {
                 Text(selectedTab == .planned ? "No planned tasks for this date" : "add_task.empty.category") // TODO: Localize "No planned..." if strictly needed, or reuse empty
@@ -171,20 +210,32 @@ struct AddTaskView: View {
                 }
             }
             
-            createNewLink
+
         }
         .id(renderToken)
     }
 
     private var saveButtonBar: some View {
         VStack(spacing: AppSpacing.small) {
-            AppButton(style: .primary) {
-                addSelectedTask()
-            } label: {
-                Text("common.add")
+            if selectedTaskIDs.isEmpty {
+                NavigationLink(destination: NewTaskView(tasks: .constant([]))) {
+                    Text("add_task.create_new")
+                        .font(AppFont.button())
+                        .frame(maxWidth: .infinity)
+                        .frame(height: AppMetrics.buttonHeight)
+                        .foregroundColor(AppColor.white)
+                        .background(
+                            RoundedRectangle(cornerRadius: AppRadius.button, style: .continuous)
+                                .fill(AppColor.primary)
+                        )
+                }
+            } else {
+                AppButton(style: .primary) {
+                    addSelectedTask()
+                } label: {
+                    Text("common.add")
+                }
             }
-            .disabled(selectedTaskIDs.isEmpty)
-            .opacity(selectedTaskIDs.isEmpty ? 0.6 : 1)
 
             AppColor.clear
                 .frame(height: AppSpacing.xSmall)

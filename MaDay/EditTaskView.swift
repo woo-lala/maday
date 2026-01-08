@@ -11,10 +11,8 @@ struct EditTaskView: View {
     @State private var categoryOptions: [CategoryOption] = []
     @State private var selectedCategoryId: UUID?
     @State private var categoryPickerExpanded = false
-    @State private var newCategoryName = ""
-    @State private var newCategoryColor: Color = AppColor.work
-    @State private var newCategoryColorId: String = "work"
-    @State private var showAddCategoryForm = false
+    @State private var showCategoryEditor = false
+    @State private var categoryToEdit: CategoryEntity? = nil
 
     @State private var goalHours: Int = 0
     @State private var goalMinutes: Int = 0
@@ -83,9 +81,6 @@ struct EditTaskView: View {
         categoryOptions.first { $0.id == selectedCategoryId } ?? categoryOptions.first
     }
 
-    private var availablePalette: [ColorChoice] {
-        ColorChoice.fixed
-    }
 
     var body: some View {
         ZStack {
@@ -107,6 +102,16 @@ struct EditTaskView: View {
         }
         .onAppear {
             loadCategories()
+        }
+        .sheet(isPresented: $showCategoryEditor) {
+            CategoryEditView(category: categoryToEdit) { name, colorHex in
+                if let entity = categoryToEdit {
+                    updateCategory(entity, name: name, colorHex: colorHex)
+                } else {
+                    addCategory(name: name, colorHex: colorHex)
+                }
+            }
+            .presentationDetents([.medium])
         }
     }
     
@@ -177,30 +182,36 @@ struct EditTaskView: View {
 
                         VStack(spacing: AppSpacing.smallPlus) {
                             ForEach(categoryOptions) { category in
-                                HStack {
-                                    Circle()
-                                        .fill(category.color)
-                                        .frame(width: AppSpacing.small, height: AppSpacing.small)
-                                    Text(category.name)
-                                        .font(AppFont.bodyRegular())
-                                        .foregroundColor(AppColor.textPrimary)
-                                    Spacer()
-                                    if selectedCategoryId == category.id {
-                                        Image(systemName: "checkmark")
-                                            .foregroundColor(AppColor.primary)
-                                        .font(AppFont.caption())
-                                    }
-                                }
-                                .padding(.horizontal, AppSpacing.small)
-                                .contentShape(Rectangle())
-                                .onTapGesture {
+                                Button {
                                     withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
                                         selectedCategoryId = category.id
                                         categoryPickerExpanded = false
-                                        showAddCategoryForm = false
                                     }
+                                } label: {
+                                    HStack {
+                                        Circle()
+                                            .fill(category.color)
+                                            .frame(width: AppSpacing.small, height: AppSpacing.small)
+                                        Text(category.name)
+                                            .font(AppFont.bodyRegular())
+                                            .foregroundColor(AppColor.textPrimary)
+                                        Spacer()
+                                        if selectedCategoryId == category.id {
+                                            Image(systemName: "checkmark")
+                                                .foregroundColor(AppColor.primary)
+                                            .font(AppFont.caption())
+                                        }
+                                    }
+                                    .padding(.horizontal, AppSpacing.small)
                                 }
+                                .buttonStyle(.plain)
                                 .contextMenu {
+                                    Button {
+                                        prepareEditCategoryForm(category: category)
+                                    } label: {
+                                        Label("common.edit", systemImage: "pencil")
+                                    }
+                                    
                                     Button(role: .destructive) {
                                         deleteCategory(id: category.id)
                                     } label: {
@@ -209,99 +220,28 @@ struct EditTaskView: View {
                                 }
                             }
                             
-                            if showAddCategoryForm {
-                                VStack(alignment: .leading, spacing: AppSpacing.small) {
-                                    AppTextField("new_task.category.placeholder.name", text: $newCategoryName)
-                                    
-                                    HStack(spacing: AppSpacing.xSmall) {
-                                        ForEach(availablePalette) { choice in
-                                            Circle()
-                                                .fill(choice.color)
-                                                .frame(width: 24, height: 24)
-                                                .overlay(
-                                                    Circle()
-                                                        .stroke(choice.id == newCategoryColorId ? AppColor.primaryStrong : AppColor.border, lineWidth: choice.id == newCategoryColorId ? 2 : 1)
-                                                )
-                                                .shadow(color: choice.id == newCategoryColorId ? AppColor.primary.opacity(0.25) : .clear, radius: choice.id == newCategoryColorId ? 3 : 0, x: 0, y: 1)
-                                                .onTapGesture {
-                                                    newCategoryColor = choice.color
-                                                    newCategoryColorId = choice.id
-                                                }
-                                        }
-                                        
-                                        ColorPicker("", selection: Binding(get: {
-                                            newCategoryColor
-                                        }, set: { newVal in
-                                            newCategoryColor = newVal
-                                            newCategoryColorId = "custom-\(UUID().uuidString)"
-                                        }))
-                                        .labelsHidden()
-                                        .frame(width: 30, height: 30)
-                                    }
-                                    
-                                    HStack(spacing: AppSpacing.small) {
-                                        Button {
-                                            addCategory()
-                                        } label: {
-                                            Text("add_task.category.add")
-                                                .font(AppFont.button())
-                                                .frame(maxWidth: .infinity)
-                                                .frame(height: AppMetrics.buttonHeight)
-                                                .foregroundColor(AppColor.white)
-                                                .background(
-                                                    RoundedRectangle(cornerRadius: AppRadius.button, style: .continuous)
-                                                        .fill(AppColor.primary)
-                                                )
-                                        }
-                                        .buttonStyle(.plain)
-                                        .disabled(newCategoryName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                                        
-                                        Button {
-                                            withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
-                                                showAddCategoryForm = false
-                                                newCategoryName = ""
-                                            }
-                                        } label: {
-                                            Text("common.cancel")
-                                                .font(AppFont.button())
-                                                .frame(height: AppMetrics.buttonHeight)
-                                                .foregroundColor(AppColor.textSecondary)
-                                                .padding(.horizontal, AppSpacing.medium)
-                                                .background(
-                                                    RoundedRectangle(cornerRadius: AppRadius.button, style: .continuous)
-                                                        .stroke(AppColor.border, lineWidth: 1)
-                                                )
-                                        }
-                                        .buttonStyle(.plain)
-                                    }
+                            Button {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
+                                    prepareAddCategoryForm()
                                 }
-                                .padding(.horizontal, AppSpacing.medium)
-                                .padding(.bottom, AppSpacing.smallPlus)
-                            } else {
-                                Button {
-                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
-                                        prepareAddCategoryForm()
-                                    }
-                                } label: {
-                                    HStack {
-                                        Image(systemName: "plus")
-                                            .font(.system(size: 14, weight: .semibold))
-                                            .foregroundColor(AppColor.white)
-                                        Text("add_task.category.add_button")
-                                            .font(AppFont.body())
-                                            .foregroundColor(AppColor.white)
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 36)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: AppRadius.button, style: .continuous)
-                                            .fill(AppColor.primary)
-                                    )
-                                    .padding(.horizontal, AppSpacing.small)
+                            } label: {
+                                HStack {
+                                    Image(systemName: "plus")
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundColor(AppColor.white)
+                                    Text("new_task.category.add.button")
+                                        .font(AppFont.body())
+                                        .foregroundColor(AppColor.white)
                                 }
-                                .buttonStyle(.plain)
-                                .disabled(availablePalette.isEmpty)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 36)
+                                .background(
+                                    RoundedRectangle(cornerRadius: AppRadius.button, style: .continuous)
+                                        .fill(AppColor.primary)
+                                )
+                                .padding(.horizontal, AppSpacing.small)
                             }
+                            .buttonStyle(.plain)
                         }
                         .padding(.horizontal, AppSpacing.medium)
                         .padding(.vertical, AppSpacing.smallPlus)
@@ -621,7 +561,7 @@ struct EditTaskView: View {
         descriptionText = text.isEmpty ? nil : text
 
         let totalSeconds = Int64(goalHours * 3600 + goalMinutes * 60)
-        let colorHex = getColorHex(for: selectedCategory.colorId)
+        let colorHex = selectedCategory.color.toHex() ?? "3D7AF5"
         let categories = CoreDataManager.shared.fetchCategories()
         let chosenCategory = categories.first { $0.id == selectedCategory.id }
         let categoryEntity = chosenCategory ?? CoreDataManager.shared.createCategory(name: selectedCategory.name, color: colorHex, order: Int16(categories.count))
@@ -656,7 +596,7 @@ struct EditTaskView: View {
         if categories.isEmpty {
             let defaults = CategoryOption.defaults
             for (idx, opt) in defaults.enumerated() {
-                _ = CoreDataManager.shared.createCategory(name: opt.name, color: getColorHex(for: opt.colorId), order: Int16(idx))
+                _ = CoreDataManager.shared.createCategory(name: opt.name, color: opt.color.toHex() ?? "3D7AF5", order: Int16(idx))
             }
             let seeded = CoreDataManager.shared.fetchCategories()
             categoryOptions = seeded.map { CategoryOption(entity: $0) }
@@ -669,26 +609,37 @@ struct EditTaskView: View {
         }
     }
     
-    private func addCategory() {
-        let name = newCategoryName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty else { return }
+    private func addCategory(name: String, colorHex: String) {
         let categories = CoreDataManager.shared.fetchCategories()
         let newOrder = Int16(categories.count)
-        let newEntity = CoreDataManager.shared.createCategory(name: name, color: getColorHex(for: newCategoryColorId), order: newOrder)
+        let newEntity = CoreDataManager.shared.createCategory(name: name, color: colorHex, order: newOrder)
         let option = CategoryOption(entity: newEntity)
         categoryOptions.append(option)
         selectedCategoryId = option.id
-        newCategoryName = ""
-        showAddCategoryForm = false
         categoryPickerExpanded = false
     }
     
     private func prepareAddCategoryForm() {
-        if let first = availablePalette.first {
-            newCategoryColor = first.color
-            newCategoryColorId = first.id
+        categoryToEdit = nil
+        showCategoryEditor = true
+    }
+    
+    private func prepareEditCategoryForm(category: CategoryOption) {
+        let categories = CoreDataManager.shared.fetchCategories()
+        categoryToEdit = categories.first(where: { $0.id == category.id })
+        showCategoryEditor = true
+    }
+    
+    private func updateCategory(_ entity: CategoryEntity, name: String, colorHex: String) {
+        entity.name = name
+        entity.color = colorHex
+        entity.updatedAt = Date()
+        CoreDataManager.shared.saveContext()
+        
+        // Update local state
+        if let index = categoryOptions.firstIndex(where: { $0.id == entity.id }) {
+            categoryOptions[index] = CategoryOption(entity: entity)
         }
-        showAddCategoryForm = true
     }
     
     private func dayButton(for day: Int) -> some View {
@@ -743,24 +694,6 @@ struct EditTaskView: View {
             selectedCategoryId = categoryOptions.first?.id
         }
     }
-    
-    private func getColorHex(for id: String) -> String {
-        switch id {
-        case "work": return "3D7AF5"
-        case "personal": return "E94E3D"
-        case "fitness": return "26BA67"
-        case "learn": return "FFC23F"
-        case "youtube": return "E94E3D"
-        case "shopping": return "2EB97F"
-        case "cooking": return "6B7280"
-        case "blue": return "3D7AF5"
-        case "green": return "26BA67"
-        case "yellow": return "FFC23F"
-        case "orange": return "FF9500"
-        case "red": return "FF3B30"
-        default: return "3D7AF5"
-        }
-    }
 }
 
 private struct CategoryOption: Identifiable, Hashable {
@@ -800,15 +733,3 @@ private struct CategoryOption: Identifiable, Hashable {
     }
 }
 
-private struct ColorChoice: Identifiable {
-    let id: String
-    let color: Color
-
-    static let fixed: [ColorChoice] = [
-        ColorChoice(id: "blue", color: Color(hex: "3D7AF5")),
-        ColorChoice(id: "green", color: Color(hex: "26BA67")),
-        ColorChoice(id: "yellow", color: Color(hex: "FFC23F")),
-        ColorChoice(id: "orange", color: Color(hex: "FF9500")),
-        ColorChoice(id: "red", color: Color(hex: "FF3B30"))
-    ]
-}

@@ -210,3 +210,4 @@
 "add_task.tab.recent" = "최근";
 "add_task.tab.planned" = "계획됨";
 "add_task.tab.all" = "전체";
+"new_task.category.placeholder.name" = "카테고리 이름을 입력하세요";
