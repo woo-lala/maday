@@ -3,8 +3,8 @@ import SwiftUI
 enum AppColor {
     static let background = Color.mdBackground
     static let surface = Color.mdCard
-    static let overlay = Color.black.opacity(0.05)
-
+    static let overlay = Color.mdOverlay
+    
     static let primary = Color.mdPrimary
     static let primaryStrong = Color.mdPrimaryStrong
     static let destructive = Color.mdDestructive
@@ -24,8 +24,8 @@ enum AppColor {
     static let textPrimary = Color.mdTextPrimary
     static let textSecondary = Color.mdTextSecondary
 
-    static let border = Color.black.opacity(0.08)
-    static let shadow = Color.black.opacity(0.05)
+    static let border = Color.mdBorder
+    static let shadow = Color.mdShadow
 
     static let clear = Color.clear
     static let white = Color.white

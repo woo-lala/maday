@@ -407,7 +407,7 @@ private struct CustomCalendarView: View {
             }
         }
         .padding()
-        .background(Color.white) // Opaque background
+        .background(AppColor.surface) // Opaque background
     }
     
     private var monthYearString: String {
